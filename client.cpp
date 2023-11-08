@@ -1,14 +1,19 @@
 #include <string>
+#include <vector>
 
-class Client{
-    public:
-
-    Client(string name_in){
-        if (true){
-            
+using namespace std;
+class Client
+{
+public:
+    Client(string name_in)
+    {
+        if (true)
+        {
         }
     }
 
-    private:
-        string name;
+private:
+    int id;
+    string name;
+    vector<int> following;
 };
