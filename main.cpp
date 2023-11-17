@@ -1,15 +1,26 @@
-#include "client.cpp"
+#include "client.h"
+#include "server.cpp"
 #include <iostream>
 
 using namespace std;
 
-int main(){
-    Client client1("Afonso", 2345), client2("Jesus", 6789);
+int main()
+{
+    Server server;
+    Client client1("Afonso"), client2("Jesus");
 
-    client1.follow(client2);
-    client2.follow(client1);
+    int id1 = server.createAccount(client1);
+    client1.setId(id1);
 
-    cout << client1.getFollowById(6789).getName() << endl;
+    int id2 = server.createAccount(client2);
+    client2.setId(id2);
+
+    client1.addFollower(client2);
+    server.addFollower(client1.getId(), client2);
+
+    vector<Client> vect = server.getFollowers(client1.getId());
+
+    cout << vect[0].getName() << ", " << vect[0].getId() << endl;
 
     return 0;
 }

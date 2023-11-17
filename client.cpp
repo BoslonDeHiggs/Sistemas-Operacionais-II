@@ -5,15 +5,9 @@ using namespace std;
 class Client
 {
 public:
-    Client(string name_in, int id_in)
+    Client(string name_in)
     {
-        id = id_in;
         name = name_in;
-    }
-
-    int getId()
-    {
-        return id;
     }
 
     string getName()
@@ -21,26 +15,28 @@ public:
         return name;
     }
 
-    Client getFollowById(int id_in)
+    void addFollower(Client fol_in)
     {
-        for (int i = 0; i < following.size(); i++)
-        {
-            if (following[i].id == id_in)
-            {
-                return following[i];
-            }
-        }
-
-        return following[0];
+        followers.push_back(fol_in);
     }
 
-    void follow(Client user)
+    vector<Client> getFollowers()
     {
-        following.push_back(user);
+        return followers;
+    }
+
+    void setId(int id_in)
+    {
+        id = id_in;
+    }
+
+    int getId()
+    {
+        return id;
     }
 
 private:
     int id;
     string name;
-    vector<Client> following;
+    vector<Client> followers;
 };
