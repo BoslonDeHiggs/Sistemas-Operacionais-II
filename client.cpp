@@ -10,19 +10,36 @@
 #include <pthread.h>
 #include <thread>
 #include <iostream>
+#include <string>
 
 #define PORT 4000
 
 using namespace std;
 
-int sockfd;
 char buffer[256];
+int sockfd;
 struct sockaddr_in serv_addr, from;
+struct hostent *server;
 
-void getMessage(){
+class Client
+{
+private:
+	string name;
+
+public:
+	Client(string name){
+		this->name = name;
+	}
+
+	string getName(){
+		return this->name;
+	}
+};
+
+void getMessage(Client client){
 
 	while(true){
-		printf("Enter the message: ");
+		cout << client.getName() << ": ";
 		bzero(buffer, 256);
 		fgets(buffer, 256, stdin);
 
@@ -45,10 +62,9 @@ void receiveReply(){
 }
 
 int main(int argc, char *argv[])
-{
-    int n;
-	struct hostent *server;
-	
+{	
+	Client client(argv[2]);
+
 	if (argc < 2) {
 		fprintf(stderr, "usage %s hostname\n", argv[0]);
 		exit(0);
@@ -68,7 +84,7 @@ int main(int argc, char *argv[])
 	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
 	bzero(&(serv_addr.sin_zero), 8);
 
-	thread messageThread(getMessage);
+	thread messageThread(getMessage, client);
 	thread replyThread(receiveReply);
 
 	messageThread.join();
