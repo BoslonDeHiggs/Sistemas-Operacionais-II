@@ -15,18 +15,37 @@
 
 using namespace std;
 
-void viado(){
-	cout << "Oi viado" << endl;
+int sockfd;
+char buffer[256];
+struct sockaddr_in serv_addr, from;
+
+void getMessage(){
+
+	while(true){
+		printf("Enter the message: ");
+		bzero(buffer, 256);
+		fgets(buffer, 256, stdin);
+
+		int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+		if (n < 0) 
+			printf("ERROR sendto");
+	}
+}
+
+void receiveReply(){
+	socklen_t length = sizeof(struct sockaddr_in);
+	int n = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) &from, &length);
+	if (n < 0)
+		printf("ERROR recvfrom");
+
+	printf("\nGot an ack: %s\n", buffer);
 }
 
 int main(int argc, char *argv[])
 {
-    int sockfd, n;
-	unsigned int length;
-	struct sockaddr_in serv_addr, from;
+    int n;
 	struct hostent *server;
 	
-	char buffer[256];
 	if (argc < 2) {
 		fprintf(stderr, "usage %s hostname\n", argv[0]);
 		exit(0);
@@ -47,24 +66,11 @@ int main(int argc, char *argv[])
 	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
 	bzero(&(serv_addr.sin_zero), 8);
 
-	thread colorido(viado);
+	thread messageThread(getMessage);
+	thread replyThread(receiveReply);
 
-	colorido.join();
-
-	printf("Enter the message: ");
-	bzero(buffer, 256);
-	fgets(buffer, 256, stdin);
-
-	n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
-	if (n < 0) 
-		printf("ERROR sendto");
-	
-	length = sizeof(struct sockaddr_in);
-	n = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) &from, &length);
-	if (n < 0)
-		printf("ERROR recvfrom");
-
-	printf("Got an ack: %s\n", buffer);
+	messageThread.join();
+	replyThread.join();
 	
 	close(sockfd);
 	return 0;
