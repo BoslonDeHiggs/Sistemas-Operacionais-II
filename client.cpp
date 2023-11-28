@@ -7,8 +7,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
+#include <thread>
+#include <iostream>
 
 #define PORT 4000
+
+using namespace std;
+
+void viado(){
+	cout << "Oi viado" << endl;
+}
 
 int main(int argc, char *argv[])
 {
@@ -36,7 +45,11 @@ int main(int argc, char *argv[])
 	serv_addr.sin_family = AF_INET;     
 	serv_addr.sin_port = htons(PORT);    
 	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
-	bzero(&(serv_addr.sin_zero), 8);  
+	bzero(&(serv_addr.sin_zero), 8);
+
+	thread colorido(viado);
+
+	colorido.join();
 
 	printf("Enter the message: ");
 	bzero(buffer, 256);
