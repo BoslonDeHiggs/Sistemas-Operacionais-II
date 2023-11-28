@@ -1,5 +1,7 @@
-client: client.o
+cmp: client server
+
+client:
 	g++ -o client client.cpp
 
-server: server.o
+server:
 	g++ -o server server.cpp
