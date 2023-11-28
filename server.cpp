@@ -7,6 +7,8 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <thread>
+#include <iostream>
+#include <arpa/inet.h>
 
 #define PORT 4000
 
@@ -24,6 +26,7 @@ void receiveMessage(){
 		if (n < 0) 
 			printf("ERROR on recvfrom");
 		printf("Received a datagram: %s\n", buf);
+		printf("IP address is: %s\n", inet_ntoa(cli_addr.sin_addr));
 	}
 }
 
