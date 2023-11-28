@@ -43,9 +43,16 @@ void getMessage(Client client){
 		bzero(buffer, 256);
 		fgets(buffer, 256, stdin);
 
-		int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
-		if (n < 0) 
-			printf("ERROR sendto");
+		string aux(buffer);
+
+		if (aux.substr(0, 5) == "SEND "){
+			char message[128];
+			bzero(message, 128);
+			copy(&buffer[5], &buffer[133], &message[strlen(message)]);
+			int n = sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+			if (n < 0) 
+				printf("ERROR sendto");
+		}
 	}
 }
 
@@ -63,14 +70,14 @@ void receiveReply(){
 
 int main(int argc, char *argv[])
 {	
-	Client client(argv[2]);
+	Client client(argv[1]);
 
 	if (argc < 2) {
 		fprintf(stderr, "usage %s hostname\n", argv[0]);
 		exit(0);
 	}
 	
-	server = gethostbyname(argv[1]);
+	server = gethostbyname(argv[2]);
 	if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
         exit(0);
