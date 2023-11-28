@@ -19,6 +19,7 @@ char buf[256];
 
 void receiveMessage(){
 	while(true){
+		bzero(buf, 256);
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
