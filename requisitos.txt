@@ -1,0 +1,52 @@
+REQUISITOS
+Perfil:
+- Um perfil possui de 4 a 20 caracteres
+- O perfil deverá ser informado pelo usuário ao iniciar o cliente
+- O usuário pode usar o mesmo nome de perfil em, no máximo, duas sessões de uso simultaneamente (em dois processos de cleinte distintos)
+- O servidor deverá recusar novas tentativas de iniciar uma sessão com um mesmo perfil quando houver duas sessões ativas para esse mesmo perfil
+- O encerramento do processo não deverá afetar a outra sessão de uso do mesmo perfil, caso existente
+- O perfil é criado quando o usuário informa na linha de comando o nome do perfil
+- Se o perfil informado na linha de comando já existe, o usuário faz o logon
+- A interface do cliente deve ter uma thread para escrever as mensagens na tela, e outra thread para ler as notificações e comandos digitados pelo usuário
+
+Seguir:
+- O usuário poderá seguir outro perfil existente
+- O usuário não poderá seguir a si mesmo
+- "Seguir" alguém significa receber notificações de quem está sendo seguido
+- Para seguir alguém, o usuário deve emitir o seguinte comando:
+	FOLLOW @username
+
+Notificações:
+- O usuário pode enviar notificações para quem o segue (tipo um tweet)
+- O perfil do autor da notificação deverá ser passado como parâmetro ao processo do cliente
+- O usuário receberá apenas aquelas notificações enviadas por um determinado perfil a partir do instante que passar a segui-lo
+- Ao iniciar novamente o app cliente informando um perfil existente, o servidor deverá enviar ao usuário todas as notificações enviadas, pelos perfis que este usuário segue, no período em que esteve offline
+- Se o perfil deslogou em uma sessão, mas permaneceu ativo em outra, não receberá as notificações quando logar novamente na primeira sessão, já que elas terão sido enviadas para a segunda sessão, que ficou ativa
+- Cada notificação deverá ter um conjunto de metadados:
+	1) identificador da notificação
+	2) perfil do autor
+	3) timestamp (quando o servidor recebe a notificação)
+	4) quantidade de caracteres
+	5) número de seguidores que ainda não receberam a mensagem
+- O grupo pode escolher outros metadados que considere relevante
+- Cada mensagem deve ter no máximo 128 caracteres
+- Para enviar notificações, o usuário deve emitir o seguinte comando:
+	SEND message to send
+
+Servidor/sistema:
+- O servidor deve guardar somente os usuários e lista de seguidores de cada perfil em um arquivo de texto
+- Em caso de falha no sistema, quaisquer mensagens enviadas ou pendentes devem ser descartadas
+- O sistema deve ser feito de maneira modular, a fim de incluir novas funcionalidades no futuro (parte 2 do trabalho)
+- A PRODUÇÃO de uma notificação deverá seguir os seguintes passos:
+	1) receber a notificação do processo cliente
+	2) escrever a notificação na lista de notificações pendentes de envio
+	3) para cada seguidor, atualizar a fila de notificações pendentes de recebimento
+- O CONSUMO de uma notificação deverá seguir os seguintes passos (e repeti-los enquanto houver notificações na fila):
+	1) recuperar (e remover) um identificador de notificação da fila de pendentes
+	2) enviar a respectiva notificação ao processo cliente
+	3) decrementar o valor de envios pendentes no metadado da notificação
+- A notificação o será removida da lista de notificações somente após todos os seguidores que devem recebê-la a consumirem
+- Ao alcançar o valor zero, a notificação deverá ser excluída da estrutura de dados mantida pelo servidor
+- Um cliente deve poder estabelecer uma sessão de uso com o servidor via linha de comando utilizando:
+	$ ./app_cliente <perfil> <endereço do servidor> <porta>
+- Ao apertar CTRL+C (interrupção) ou CTRL+D (fim de arquivo), o processo cliente deverá encerrar, sinalizando ao servidor que o usuário está desconectando do serviço
