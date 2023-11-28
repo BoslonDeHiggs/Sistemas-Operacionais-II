@@ -1,6 +1,5 @@
-CC = g++
-all: main
-main: main.o client.o
-	${CC} -o main main.o client.o
-main.o: main.cpp client.cpp
-	${CC} -c main.cpp client.cpp
+client: client
+	g++ -o client client.cpp
+
+server: server
+	g++ -o server server.cpp
