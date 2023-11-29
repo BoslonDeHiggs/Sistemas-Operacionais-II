@@ -27,7 +27,7 @@ void receiveMessage(){
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
-		printf("Received a datagram: %s\n", buf);
+		printf("Received a datagram: %s", buf);
 		printf("IP address is: %s\n", inet_ntoa(cli_addr.sin_addr));
 	}
 }

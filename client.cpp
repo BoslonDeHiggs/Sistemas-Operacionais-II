@@ -36,7 +36,21 @@ public:
 	}
 };
 
-void getMessage(Client client){
+void connect(Client client){
+	bzero(buffer, 128);
+	//int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+}
+
+void sendTo(){
+	char message[128];
+	bzero(message, 128);
+	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
+	int n = sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+	if (n < 0) 
+		printf("ERROR sendto");
+}
+
+void getCommand(Client client){
 
 	while(true){
 		cout << client.getName() << ": ";
@@ -46,12 +60,7 @@ void getMessage(Client client){
 		string aux(buffer);
 
 		if (aux.substr(0, 5) == "SEND "){
-			char message[128];
-			bzero(message, 128);
-			copy(&buffer[5], &buffer[133], &message[strlen(message)]);
-			int n = sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
-			if (n < 0) 
-				printf("ERROR sendto");
+			sendTo();
 		}
 	}
 }
@@ -68,10 +77,22 @@ void receiveReply(){
 	}
 }
 
+void openSocket(){
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+		printf("ERROR opening socket");
+	
+	serv_addr.sin_family = AF_INET;     
+	serv_addr.sin_port = htons(PORT);    
+	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
+	bzero(&(serv_addr.sin_zero), 8);
+}
+
+void closeSocket(){
+	close(sockfd);
+}
+
 int main(int argc, char *argv[])
 {	
-	Client client(argv[1]);
-
 	if (argc < 2) {
 		fprintf(stderr, "usage %s hostname\n", argv[0]);
 		exit(0);
@@ -83,20 +104,19 @@ int main(int argc, char *argv[])
         exit(0);
     }	
 	
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-		printf("ERROR opening socket");
-	
-	serv_addr.sin_family = AF_INET;     
-	serv_addr.sin_port = htons(PORT);    
-	serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
-	bzero(&(serv_addr.sin_zero), 8);
+	openSocket();
 
-	thread messageThread(getMessage, client);
+	Client client(argv[1]);
+
+	connect(client);
+
+	thread messageThread(getCommand, client);
 	thread replyThread(receiveReply);
 
 	messageThread.join();
 	replyThread.join();
 	
-	close(sockfd);
+	closeSocket();
+
 	return 0;
 }
