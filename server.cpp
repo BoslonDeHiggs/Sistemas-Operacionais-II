@@ -9,6 +9,7 @@
 #include <thread>
 #include <iostream>
 #include <arpa/inet.h>
+#include <vector>
 
 #define PORT 4000
 
@@ -18,6 +19,7 @@ int sockfd, n;
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 char buf[256];
+vector<sockaddr> ip_addrs;
 
 void receiveMessage(){
 	while(true){
@@ -30,9 +32,8 @@ void receiveMessage(){
 	}
 }
 
-int main(int argc, char *argv[])
-{		
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) 
+void openSocket(){
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) 
 		printf("ERROR opening socket");
 
 	serv_addr.sin_family = AF_INET;
@@ -42,7 +43,12 @@ int main(int argc, char *argv[])
 	 
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr)) < 0) 
 		printf("ERROR on binding");
-	
+}
+
+int main(int argc, char *argv[])
+{		
+	openSocket();
+
 	clilen = sizeof(struct sockaddr_in);
 	
 	thread receiveThread(receiveMessage);
