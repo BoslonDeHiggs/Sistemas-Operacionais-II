@@ -11,6 +11,7 @@
 #include <thread>
 #include <iostream>
 #include <string>
+#include "data.hpp"
 
 #define PORT 4000
 
@@ -36,31 +37,36 @@ public:
 	}
 };
 
-void connect(Client client){
-	bzero(buffer, 128);
-	//int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
-}
-
-void sendTo(){
-	char message[128];
-	bzero(message, 128);
-	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
+void sendTo(char *message){
 	int n = sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	if (n < 0) 
 		printf("ERROR sendto");
 }
 
+void connect(Client client){
+	char message[128];
+	bzero(message, 128);
+	//int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+}
+
+void sendMessage(){
+	char message[128];
+	bzero(message, 128);
+	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
+	sendTo(message);
+}
+
 void getCommand(Client client){
 
 	while(true){
-		cout << client.getName() << ": ";
+		cout << "[#] " << client.getName() << "~ ";
 		bzero(buffer, 256);
 		fgets(buffer, 256, stdin);
 
 		string aux(buffer);
 
 		if (aux.substr(0, 5) == "SEND "){
-			sendTo();
+			sendMessage();
 		}
 	}
 }

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <vector>
+#include "data.hpp"
 
 #define PORT 4000
 
@@ -27,8 +28,8 @@ void receiveMessage(){
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
-		printf("Received a datagram: %s", buf);
 		printf("IP address is: %s\n", inet_ntoa(cli_addr.sin_addr));
+		printf("[!] <name>~ %s", buf);
 	}
 }
 
