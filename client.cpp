@@ -29,7 +29,8 @@ private:
 
 public:
 	Client(string name){
-		this->name = name;
+		if (name.length() >= 4 && name.length() <= 20)
+			this->name = name;
 	}
 
 	string getName(){
@@ -57,7 +58,6 @@ void sendMessage(){
 }
 
 void getCommand(Client client){
-
 	while(true){
 		cout << "[#] " << client.getName() << "~ ";
 		bzero(buffer, 256);
@@ -67,6 +67,12 @@ void getCommand(Client client){
 
 		if (aux.substr(0, 5) == "SEND "){
 			sendMessage();
+		}
+		else if (aux.substr(0, 7) == "FOLLOW "){
+			// sendFollowReq();
+		}
+		else {
+			cout << "-> [?] Command not recognized" << endl; 
 		}
 	}
 }
