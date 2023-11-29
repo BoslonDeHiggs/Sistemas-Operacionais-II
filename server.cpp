@@ -22,7 +22,7 @@ struct sockaddr_in serv_addr, cli_addr;
 char buf[256];
 vector<sockaddr_in> ip_addrs;
 
-void receiveMessage(){
+void receive(){
 	while(true){
 		bzero(buf, 256);
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
@@ -49,10 +49,8 @@ void openSocket(){
 int main(int argc, char *argv[])
 {		
 	openSocket();
-
-	clilen = sizeof(struct sockaddr_in);
 	
-	thread receiveThread(receiveMessage);
+	thread receiveThread(receive);
 
 	receiveThread.join();
 	
