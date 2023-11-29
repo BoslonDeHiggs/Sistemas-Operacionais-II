@@ -20,7 +20,7 @@ int sockfd, n;
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 char buf[256];
-vector<sockaddr> ip_addrs;
+vector<sockaddr_in> ip_addrs;
 
 void receiveMessage(){
 	while(true){
