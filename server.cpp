@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <queue>
-#include "datagram.hpp"
+#include "serdes.hpp"
 
 #define PORT 4000
 
@@ -20,20 +20,19 @@ using namespace std;
 int sockfd, n;
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
-char buf[1024];
-vector<sockaddr_in> ip_addrs;
-queue<packet> received;
+char buf[256];
+// vector<sockaddr_in> ip_addrs;
+// queue<packet> received;
 
 void receiveDtg(){
 	while(true){
-		bzero(buf, 1024);
-		int n = recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &cli_addr, &clilen);
+		bzero(buf, 256);
+		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
 			
-		printf("IP address is: %s\n", inet_ntoa(cli_addr.sin_addr));
-		printf("[!] <name>~ %s", buf);
-		received.pop();
+		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr);
+		cout << "[!] <name>~ " << buf;
 	}
 }
 
@@ -48,6 +47,8 @@ void openSocket(){
 	 
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr)) < 0) 
 		printf("ERROR on binding");
+
+	clilen = sizeof(struct sockaddr_in);
 }
 
 int main(int argc, char *argv[])

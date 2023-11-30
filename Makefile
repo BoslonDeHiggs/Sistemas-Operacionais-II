@@ -5,8 +5,8 @@ CPP = g++
 CPPFLAGS = -std=c++11 -Wall
 
 # Source files and target executables
-CLIENT_SRCS = client.cpp
-SERVER_SRCS = server.cpp
+CLIENT_SRCS = client.cpp serdes.cpp
+SERVER_SRCS = server.cpp serdes.cpp
 CLIENT_TARGET = client
 SERVER_TARGET = server
 

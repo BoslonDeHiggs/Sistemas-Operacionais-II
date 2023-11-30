@@ -41,7 +41,13 @@ public:
 };
 
 void sendTo(packet pkt){
-	int n = sendto(sockfd, pkt._payload, strlen(pkt._payload), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+	string aux = serpkt(pkt);
+
+	const char *dtg = aux.c_str();
+
+	cout << dtg << endl;
+
+	int n = sendto(sockfd, dtg, strlen(pkt._payload), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	if (n < 0) 
 		printf("ERROR sendto");
 }
@@ -60,7 +66,7 @@ void sendMessage(){
 	packet pkt;
 	pkt.type = DATA;
 	pkt.seqn = seqn; seqn++;
-	pkt.length = strlen(buffer);
+	pkt.length = strlen(message);
 	pkt.timestamp = time(NULL);
 	pkt._payload = message;
 

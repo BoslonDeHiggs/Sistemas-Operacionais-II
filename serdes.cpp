@@ -35,7 +35,7 @@ packet despkt(string dtgram){
 
     stringstream aux_stream;
 
-    for (int i = 4; i < tokens.size(); i++){
+    for (unsigned int i = 4; i < tokens.size(); i++){
         aux_stream << tokens[i] << ' ';
     }
 
