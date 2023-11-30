@@ -45,7 +45,7 @@ void sendTo(packet pkt){
 
 	const char *dtg = aux.c_str();
 
-	cout << dtg << endl;
+	cout << dtg;
 
 	int n = sendto(sockfd, dtg, strlen(dtg), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	if (n < 0) 

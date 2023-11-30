@@ -31,10 +31,12 @@ void receiveDtg(){
 		if (n < 0) 
 			printf("ERROR on recvfrom");
 
-		packet pkt = despkt(buf);
+		string aux(buf);
+
+		packet pkt = despkt(aux);
 			
 		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr) << endl;
-		cout << "[!] <name>~ " << pkt._payload;
+		cout << "[!] <name>~ " << buf;
 	}
 }
 
