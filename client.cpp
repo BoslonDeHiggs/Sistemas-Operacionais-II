@@ -11,6 +11,7 @@
 #include <thread>
 #include <iostream>
 #include <string>
+#include <time.h>
 #include "data.hpp"
 
 #define PORT 4000
@@ -21,6 +22,7 @@ char buffer[256];
 int sockfd;
 struct sockaddr_in serv_addr, from;
 struct hostent *server;
+int seqn = 0;
 
 class Client
 {
@@ -38,8 +40,8 @@ public:
 	}
 };
 
-void sendTo(char *message){
-	int n = sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+void sendTo(packet pkt){
+	int n = sendto(sockfd, pkt._payload, strlen(pkt._payload), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	if (n < 0) 
 		printf("ERROR sendto");
 }
@@ -54,7 +56,15 @@ void sendMessage(){
 	char message[128];
 	bzero(message, 128);
 	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
-	sendTo(message);
+
+	packet pkt;
+	pkt.type = DATA;
+	pkt.seqn = seqn; seqn++;
+	pkt.length = strlen(buffer);
+	pkt.timestamp = time(NULL);
+	pkt._payload = message;
+
+	sendTo(pkt);
 }
 
 void getCommand(Client client){

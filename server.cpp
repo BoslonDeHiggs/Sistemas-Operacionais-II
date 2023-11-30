@@ -10,6 +10,7 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <vector>
+#include <queue>
 #include "data.hpp"
 
 #define PORT 4000
@@ -21,6 +22,7 @@ socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
 char buf[256];
 vector<sockaddr_in> ip_addrs;
+queue<packet> received;
 
 void receive(){
 	while(true){
@@ -28,8 +30,10 @@ void receive(){
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
+			
 		printf("IP address is: %s\n", inet_ntoa(cli_addr.sin_addr));
 		printf("[!] <name>~ %s", buf);
+		received.pop();
 	}
 }
 

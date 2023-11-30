@@ -1,5 +1,8 @@
 #include <cstdint>
 
+#define DATA 200
+#define CMD  300
+
 typedef struct __packet{
     uint16_t type; //Tipo do pacote (p.ex. DATA | CMD)
     uint16_t seqn; //Número de sequência
