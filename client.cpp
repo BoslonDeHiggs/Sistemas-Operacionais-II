@@ -47,7 +47,7 @@ void sendTo(packet pkt){
 
 	cout << dtg << endl;
 
-	int n = sendto(sockfd, dtg, strlen(pkt._payload), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
+	int n = sendto(sockfd, dtg, strlen(dtg), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	if (n < 0) 
 		printf("ERROR sendto");
 }

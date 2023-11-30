@@ -31,7 +31,7 @@ void receiveDtg(){
 		if (n < 0) 
 			printf("ERROR on recvfrom");
 			
-		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr);
+		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr) << endl;
 		cout << "[!] <name>~ " << buf;
 	}
 }
