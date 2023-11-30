@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 #include <time.h>
-#include "datagram.hpp"
+#include "serdes.hpp"
 
 #define PORT 4000
 
@@ -73,12 +73,15 @@ void sendDtg(Client client){
 		bzero(buffer, 256);
 		fgets(buffer, 256, stdin);
 
-		string aux(buffer);
+		stringstream tokenizer(buffer);
+		string token;
 
-		if (aux.substr(0, 5) == "SEND "){
+		getline(tokenizer, token, ' ');
+
+		if (token == "SEND"){
 			sendMessage();
 		}
-		else if (aux.substr(0, 7) == "FOLLOW "){
+		else if (token == "FOLLOW"){
 			// sendFollowReq();
 		}
 		else {

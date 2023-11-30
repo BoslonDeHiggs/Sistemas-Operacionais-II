@@ -20,14 +20,14 @@ using namespace std;
 int sockfd, n;
 socklen_t clilen;
 struct sockaddr_in serv_addr, cli_addr;
-char buf[256];
+char buf[1024];
 vector<sockaddr_in> ip_addrs;
 queue<packet> received;
 
 void receiveDtg(){
 	while(true){
-		bzero(buf, 256);
-		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
+		bzero(buf, 1024);
+		int n = recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
 			
