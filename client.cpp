@@ -100,7 +100,7 @@ void receiveDtg(){
 	socklen_t length = sizeof(struct sockaddr_in);
 
 	while(true){
-		int n = recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *) &from, &length);
+		int n = recvfrom(sockfd, buffer, strlen(buffer), 0, (struct sockaddr *) &from, &length);
 		if (n < 0)
 			printf("ERROR recvfrom");
 

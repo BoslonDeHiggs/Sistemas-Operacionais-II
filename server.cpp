@@ -27,12 +27,14 @@ char buf[256];
 void receiveDtg(){
 	while(true){
 		bzero(buf, 256);
-		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
+		int n = recvfrom(sockfd, buf, strlen(buf), 0, (struct sockaddr *) &cli_addr, &clilen);
 		if (n < 0) 
 			printf("ERROR on recvfrom");
+
+		packet pkt = despkt(buf);
 			
 		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr) << endl;
-		cout << "[!] <name>~ " << buf;
+		cout << "[!] <name>~ " << pkt._payload;
 	}
 }
 
