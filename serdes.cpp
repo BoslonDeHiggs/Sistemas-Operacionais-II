@@ -38,7 +38,6 @@ packet despkt(string dtgram){
     for (unsigned int i = 4; i < tokens.size(); i++){
         aux_stream << tokens[i] << ' ';
     }
-    aux_stream << '\0';
 
     aux_str = aux_stream.str();
 

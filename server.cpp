@@ -36,7 +36,7 @@ void receiveDtg(){
 		packet pkt = despkt(aux);
 			
 		cout << "IP address is: " << inet_ntoa(cli_addr.sin_addr) << endl;
-		cout << "[!] <name>~ " << pkt._payload << endl;
+		cout << "[!] <name>~ " << buf << endl;
 	}
 }
 
