@@ -62,6 +62,7 @@ void sendMessage(){
 	char message[128];
 	bzero(message, 128);
 	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
+	message [127] = '\0';
 
 	packet pkt;
 	pkt.type = DATA;

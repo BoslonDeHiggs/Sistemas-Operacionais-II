@@ -2,7 +2,7 @@
 
 # Compiler and flags
 CPP = g++
-CPPFLAGS = -std=c++11 -Wall
+CPPFLAGS = -std=c++11 -Wall -g
 
 # Source files and target executables
 CLIENT_SRCS = client.cpp serdes.cpp
