@@ -1,6 +1,4 @@
-#include <bits/stdc++.h>
-#include <string>
-#include "data.hpp"
+#include "serdes.hpp"
 
 using namespace std;
 
@@ -34,7 +32,16 @@ packet despkt(string dtgram){
     pkt.seqn      = stoi(tokens[1]);
     pkt.length    = stoi(tokens[2]);
     pkt.timestamp = stoi(tokens[3]);
-    pkt._payload  = tokens[4].c_str();
+
+    stringstream aux_stream;
+
+    for (int i = 4; i < tokens.size(); i++){
+        aux_stream << tokens[i] << ' ';
+    }
+
+    aux_str = aux_stream.str();
+
+    pkt._payload = aux_str.c_str();
 
     return pkt;
 }

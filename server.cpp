@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <queue>
-#include "data.hpp"
+#include "datagram.hpp"
 
 #define PORT 4000
 
@@ -24,7 +24,7 @@ char buf[256];
 vector<sockaddr_in> ip_addrs;
 queue<packet> received;
 
-void receive(){
+void receiveDtg(){
 	while(true){
 		bzero(buf, 256);
 		int n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 {		
 	openSocket();
 	
-	thread receiveThread(receive);
+	thread receiveThread(receiveDtg);
 
 	receiveThread.join();
 	

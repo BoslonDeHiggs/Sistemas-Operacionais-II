@@ -20,6 +20,10 @@ $(CLIENT_TARGET): $(CLIENT_SRCS)
 $(SERVER_TARGET): $(SERVER_SRCS)
 	$(CPP) $(CPPFLAGS) $(SERVER_SRCS) -o $(SERVER_TARGET)
 
+# Rule to build test executable
+test:
+	g++ -o test test.cpp serdes.cpp
+
 # Phony target to clean the project
 .PHONY: clean
 clean:

@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 #include <time.h>
-#include "data.hpp"
+#include "datagram.hpp"
 
 #define PORT 4000
 
@@ -67,7 +67,7 @@ void sendMessage(){
 	sendTo(pkt);
 }
 
-void getCommand(Client client){
+void sendDtg(Client client){
 	while(true){
 		cout << "[#] " << client.getName() << "~ ";
 		bzero(buffer, 256);
@@ -87,7 +87,7 @@ void getCommand(Client client){
 	}
 }
 
-void receiveReply(){
+void receiveDtg(){
 	socklen_t length = sizeof(struct sockaddr_in);
 
 	while(true){
@@ -132,11 +132,11 @@ int main(int argc, char *argv[])
 
 	connect(client);
 
-	thread messageThread(getCommand, client);
-	thread replyThread(receiveReply);
+	thread sendThread(sendDtg, client);
+	thread receiveThread(receiveDtg);
 
-	messageThread.join();
-	replyThread.join();
+	sendThread.join();
+	receiveThread.join();
 	
 	closeSocket();
 
