@@ -22,7 +22,8 @@ packet despkt(string dtgram){
 
     string aux_str;
 
-    while(getline(tokenizer, aux_str, ' ')){
+    for (int i = 0; i < 4; i++){
+        getline(tokenizer, aux_str, ' ');
         tokens.push_back(aux_str);
     }
 
@@ -33,14 +34,7 @@ packet despkt(string dtgram){
     pkt.length    = stoi(tokens[2]);
     pkt.timestamp = stoi(tokens[3]);
 
-    stringstream aux_stream;
-
-    for (unsigned int i = 4; i < tokens.size(); i++){
-        aux_stream << tokens[i] << ' ';
-    }
-    aux_stream << "\0";
-
-    aux_str = aux_stream.str();
+    getline(tokenizer, aux_str);
 
     pkt._payload = aux_str.c_str();
 

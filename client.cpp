@@ -67,7 +67,7 @@ void sendMessage(){
 	packet pkt;
 	pkt.type = DATA;
 	pkt.seqn = seqn; seqn++;
-	pkt.length = strlen(message);
+	pkt.length = sizeof(message);
 	pkt.timestamp = time(NULL);
 	pkt._payload = message;
 
