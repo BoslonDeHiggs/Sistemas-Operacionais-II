@@ -58,18 +58,15 @@ void connect(Client client){
 	//int n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 }
 
-void sendMessage(){
-	char message[128];
-	bzero(message, 128);
-	copy(&buffer[5], &buffer[133], &message[strlen(message)]);
-	message [127] = '\0';
-
+void sendMessage(string message){
+	string aux = message.substr(0, 127);
+	
 	packet pkt;
 	pkt.type = DATA;
 	pkt.seqn = seqn; seqn++;
-	pkt.length = sizeof(message);
+	pkt.length = aux.length();
 	pkt.timestamp = time(NULL);
-	pkt._payload = message;
+	pkt._payload = aux.c_str();
 
 	sendTo(pkt);
 }
@@ -86,7 +83,9 @@ void sendDtg(Client client){
 		getline(tokenizer, token, ' ');
 
 		if (token == "SEND"){
-			sendMessage();
+			string message;
+			getline(tokenizer, message);
+			sendMessage(message);
 		}
 		else if (token == "FOLLOW"){
 			// sendFollowReq();

@@ -1,30 +1,11 @@
-# Makefile for compiling client.cpp and server.cpp
+C_SOURCES = c_app.cpp client/client.cpp
+S_SOURCES = s_app.cpp server/server.cpp
+FLAGS = -std=c++11 -Wall -g
 
-# Compiler and flags
-CPP = g++
-CPPFLAGS = -std=c++11 -Wall -g
+cmp: c_app s_app 
 
-# Source files and target executables
-CLIENT_SRCS = client.cpp serdes.cpp
-SERVER_SRCS = server.cpp serdes.cpp
-CLIENT_TARGET = client
-SERVER_TARGET = server
+c_app: $(C_SOURCES)
+	g++ -o c_app $(FLAGS) $(C_SOURCES)
 
-cmp: $(CLIENT_TARGET) $(SERVER_TARGET)
-
-# Rule to build the client executable
-$(CLIENT_TARGET): $(CLIENT_SRCS)
-	$(CPP) $(CPPFLAGS) $(CLIENT_SRCS) -o $(CLIENT_TARGET)
-
-# Rule to build the server executable
-$(SERVER_TARGET): $(SERVER_SRCS)
-	$(CPP) $(CPPFLAGS) $(SERVER_SRCS) -o $(SERVER_TARGET)
-
-# Rule to build test executable
-test:
-	g++ -o test test.cpp serdes.cpp
-
-# Phony target to clean the project
-.PHONY: clean
-clean:
-	rm -f $(CLIENT_TARGET) $(SERVER_TARGET)
+s_app: $(S_SOURCES)
+	g++ -o s_app $(FLAGS) $(S_SOURCES)
