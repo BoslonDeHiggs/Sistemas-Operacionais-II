@@ -34,7 +34,7 @@ void Client::send(string msg_in){
     cout << aux << endl;
 
     const char* message = aux.c_str();
-    ssize_t bytesSent = sendto(udpSocket, message, sizeof(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (bytesSent == -1) {
         std::cerr << "Error sending data to server" << std::endl;
     }

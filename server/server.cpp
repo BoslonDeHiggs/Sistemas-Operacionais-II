@@ -47,7 +47,7 @@ void Server::listen(){
 
 			Packet pkt = Packet::deserialize(buffer);
 
-			std::cout << "Received from " << inet_ntoa(clientAddress.sin_addr) << ":" << ntohs(clientAddress.sin_port) << ": " << pkt._payload << std::endl;
+			cout << "Received from " << inet_ntoa(clientAddress.sin_addr) << ":" << ntohs(clientAddress.sin_port) << ": " << pkt._payload << endl;
 		}
 	}
 }
