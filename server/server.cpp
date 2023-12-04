@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include "../packet/packet.hpp"
 
 using namespace std;
 
@@ -43,7 +44,10 @@ void Server::listen(){
 		else{
 			// Print received data
 			buffer[bytesRead] = '\0'; // Null-terminate the received data
-			std::cout << "Received from " << inet_ntoa(clientAddress.sin_addr) << ":" << ntohs(clientAddress.sin_port) << ": " << buffer << std::endl;
+
+			Packet pkt = Packet::deserialize(buffer);
+
+			std::cout << "Received from " << inet_ntoa(clientAddress.sin_addr) << ":" << ntohs(clientAddress.sin_port) << ": " << pkt._payload << std::endl;
 		}
 	}
 }

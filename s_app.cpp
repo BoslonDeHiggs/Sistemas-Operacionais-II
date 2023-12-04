@@ -1,4 +1,5 @@
 #include "server/server.hpp"
+#include "packet/packet.hpp"
 
 #define PORT 4000
 

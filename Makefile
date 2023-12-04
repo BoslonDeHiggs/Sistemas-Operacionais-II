@@ -1,5 +1,5 @@
-C_SOURCES = c_app.cpp client/client.cpp
-S_SOURCES = s_app.cpp server/server.cpp
+C_SOURCES = c_app.cpp client/client.cpp packet/packet.cpp
+S_SOURCES = s_app.cpp server/server.cpp packet/packet.cpp
 FLAGS = -std=c++11 -Wall -g
 
 cmp: c_app s_app 

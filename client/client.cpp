@@ -1,4 +1,5 @@
 #include "client.hpp"
+#include "../packet/packet.hpp"
 
 using namespace std;
 
@@ -25,8 +26,15 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
 }
 
 void Client::send(string msg_in){
-    const char* message = msg_in.c_str();
-    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+    const char *payload = msg_in.c_str();
+
+    Packet packet(200, 30, strlen(payload), time(NULL), payload);
+    string aux = packet.serialize();
+
+    cout << aux << endl;
+
+    const char* message = aux.c_str();
+    ssize_t bytesSent = sendto(udpSocket, message, sizeof(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (bytesSent == -1) {
         std::cerr << "Error sending data to server" << std::endl;
     }
