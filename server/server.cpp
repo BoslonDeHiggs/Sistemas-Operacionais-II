@@ -51,3 +51,49 @@ void Server::listen(){
 		}
 	}
 }
+
+void appendUserNameToFile(const string& content, const string& filename) {
+    // Open the file in append mode
+    ofstream outFile(filename, ios::app);
+
+    if (outFile.is_open()) {
+        // Append the content to the file
+        outFile << content << endl;
+
+        // Close the file
+        outFile.close();
+
+        std::cout << "User Name appended to file successfully." << endl;
+    } else {
+        std::cerr << "Unable to open the file for appending." << endl;
+    }
+}
+
+bool isUserNameInFile(const string& name, const string& filename) {
+    ifstream inFile(filename);
+
+    if (inFile.is_open()) {
+        string line;
+        while (getline(inFile, line)) {
+            if (line == name) {
+                inFile.close();
+                return true; // Name is already in the file
+            }
+        }
+
+        inFile.close();
+        return false; // Name is not in the file
+    } else {
+        cerr << "Unable to open the file for reading." << endl;
+        return false; // Error reading the file
+    }
+}
+
+void processUserName(const string& name, const string& filename) {
+    if (isUserNameInFile(name, filename)) {
+        cout << "User Name is already in the file." << endl;
+    } else {
+        // Append the name to the file
+        appendUserNameToFile(name, filename);
+    }
+}

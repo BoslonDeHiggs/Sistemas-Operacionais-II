@@ -27,6 +27,18 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     return 0;
 }
 
+// void Client::login(){
+//     Packet packet(0, 0, this->c_info.name.length(), time(NULL), this->c_info.name, this->c_info.name);
+
+//     string aux = packet.serialize();
+
+//     const char* message = aux.c_str();
+//     ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+//     if (bytesSent == -1) {
+//         std::cerr << "[!] ERROR~ Error sending data to server" << std::endl;
+//     }
+// }
+
 void Client::send(string payload){
     Packet packet(200, 30, payload.length(), time(NULL), this->c_info.name, payload);
 
