@@ -12,9 +12,9 @@ class Packet{
         uint16_t seqn; //Número de sequência
         uint16_t length; //Comprimento do payload
         uint16_t timestamp; // Timestamp do dado
-        const char* _payload; //Dados da mensagem
+        string _payload; //Dados da mensagem
 
-        Packet(uint16_t type, uint16_t seqn, uint16_t length, uint16_t timestamp, const char *_payload);
+        Packet(uint16_t type, uint16_t seqn, uint16_t length, uint16_t timestamp, string _payload);
 
         string serialize();
 

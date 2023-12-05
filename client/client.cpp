@@ -25,13 +25,9 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     return 0;
 }
 
-void Client::send(string msg_in){
-    const char *payload = msg_in.c_str();
-
-    Packet packet(200, 30, strlen(payload), time(NULL), payload);
+void Client::send(string payload){
+    Packet packet(200, 30, payload.length(), time(NULL), payload);
     string aux = packet.serialize();
-
-    cout << aux << endl;
 
     const char* message = aux.c_str();
     ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
