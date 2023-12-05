@@ -41,7 +41,12 @@ void Client::get_input(){
         char message[BUFFER_SIZE];
         fgets(message, BUFFER_SIZE, stdin);
         string msg = message;
-        send(msg);
+        if(msg.size() > MSG_SIZE){
+            cerr << "Message must not be longer than 128 characters" << endl;
+        }
+        else{
+            send(msg);
+        }
     }
 }
 

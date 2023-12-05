@@ -1,11 +1,11 @@
-C_SOURCES = c_app.cpp client/client.cpp packet/packet.cpp
-S_SOURCES = s_app.cpp server/server.cpp packet/packet.cpp
+C_SOURCES = aep.cpp client/client.cpp packet/packet.cpp
+S_SOURCES = aep_server.cpp server/server.cpp packet/packet.cpp
 FLAGS = -std=c++11 -Wall -g
 
-cmp: c_app s_app 
+cmp: aep aep_server 
 
-c_app: $(C_SOURCES)
-	g++ -o c_app $(FLAGS) $(C_SOURCES)
+aep: $(C_SOURCES)
+	g++ -o aep $(FLAGS) $(C_SOURCES)
 
-s_app: $(S_SOURCES)
-	g++ -o s_app $(FLAGS) $(S_SOURCES)
+aep_server: $(S_SOURCES)
+	g++ -o aep_server $(FLAGS) $(S_SOURCES)

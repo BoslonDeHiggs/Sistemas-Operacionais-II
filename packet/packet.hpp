@@ -4,6 +4,8 @@
 #include <string>
 #include <bits/stdc++.h>
 
+#define MSG_SIZE 128
+
 using namespace std;
 
 class Packet{
