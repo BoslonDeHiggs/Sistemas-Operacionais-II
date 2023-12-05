@@ -11,7 +11,7 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     // Create a UDP socket
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1) {
-        std::cerr << "Error creating socket" << std::endl;
+        std::cerr << "[!] ERROR~ Error creating socket" << std::endl;
         return -100;
     }
 
@@ -32,17 +32,18 @@ void Client::send(string payload){
     const char* message = aux.c_str();
     ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (bytesSent == -1) {
-        std::cerr << "Error sending data to server" << std::endl;
+        std::cerr << "[!] ERROR~ Error sending data to server" << std::endl;
     }
 }
 
 void Client::get_input(){
     while (true){
         char message[BUFFER_SIZE];
+        cout << "[#] " << this->c_info.name << "~ ";
         fgets(message, BUFFER_SIZE, stdin);
         string msg = message;
         if(msg.size() > MSG_SIZE){
-            cerr << "Message must not be longer than 128 characters" << endl;
+            cerr << "[!] ERROR~ Message must not be longer than 128 characters" << endl;
         }
         else{
             send(msg);
