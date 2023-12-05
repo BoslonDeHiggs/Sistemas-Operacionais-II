@@ -27,18 +27,18 @@ Packet Packet::deserialize(string serpkt){
 
     stringstream tokenizer(serpkt);
 
-    string aux_str;
+    string message;
 
     for (int i = 0; i < 4; i++){
-        getline(tokenizer, aux_str, ' ');
-        tokens.push_back(aux_str);
+        getline(tokenizer, message, ' ');
+        tokens.push_back(message);
     }
 
-    getline(tokenizer, aux_str);
+    getline(tokenizer, message);
 
-    // cout << "Aux_str.c_str(): " << aux_str.c_str() << endl;
+    // cout << "Aux_str.c_str(): " << message.c_str() << endl;
 
-    Packet pkt(stoi(tokens[0]), stoi(tokens[1]), stoi(tokens[2]), stoi(tokens[3]), aux_str);
+    Packet pkt(stoi(tokens[0]), stoi(tokens[1]), stoi(tokens[2]), stoi(tokens[3]), message);
 
     // cout << pkt.type << ' ' << pkt.seqn << ' ' << pkt.length << ' ' << pkt.timestamp << ' ' << pkt._payload << endl;
 
