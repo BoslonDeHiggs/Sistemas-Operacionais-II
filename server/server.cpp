@@ -47,7 +47,7 @@ void Server::listen(){
 
 			Packet pkt = Packet::deserialize(buffer);
 
-			cout << "[!] <name>~ " << pkt._payload << endl;
+			cout << "[!] <" << pkt.name << ">~ " << pkt._payload << endl;
 		}
 	}
 }

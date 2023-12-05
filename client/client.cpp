@@ -28,7 +28,8 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
 }
 
 void Client::send(string payload){
-    Packet packet(200, 30, payload.length(), time(NULL), payload);
+    Packet packet(200, 30, payload.length(), time(NULL), this->c_info.name, payload);
+
     string aux = packet.serialize();
 
     const char* message = aux.c_str();
