@@ -1,5 +1,6 @@
 #include "client.hpp"
 #include "../packet/packet.hpp"
+#include <netdb.h>
 
 using namespace std;
 
@@ -16,9 +17,10 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     }
 
     // Set up the server address struct
+    struct hostent *server = gethostbyname(ip);
     std::memset(&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = inet_addr(ip); // Server IP address (loopback in this example)
+    serverAddress.sin_addr = *((struct in_addr *)server->h_addr); // Server IP address (loopback in this example)
     serverAddress.sin_port = htons(port);
     bzero(&(serverAddress.sin_zero), 8);
 
