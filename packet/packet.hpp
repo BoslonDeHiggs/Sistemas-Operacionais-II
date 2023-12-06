@@ -7,6 +7,8 @@
 #define MSG_SIZE 128
 #define NUM_PARAM 5
 
+#define SEND 100
+
 using namespace std;
 
 class Packet{

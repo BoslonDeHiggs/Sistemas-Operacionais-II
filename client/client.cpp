@@ -39,8 +39,8 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
 //     }
 // }
 
-void Client::send(string payload){
-    Packet packet(200, 30, payload.length(), time(NULL), this->c_info.name, payload);
+void Client::send(uint16_t code, string payload){
+    Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
 
     string aux = packet.serialize();
 
@@ -53,15 +53,26 @@ void Client::send(string payload){
 
 void Client::get_input(){
     while (true){
-        char message[BUFFER_SIZE];
+        char input[BUFFER_SIZE];
         cout << "[#] " << this->c_info.name << "~ ";
-        fgets(message, BUFFER_SIZE, stdin);
-        string msg = message;
+        fgets(input, BUFFER_SIZE, stdin);
+        string msg = input;
         if(msg.size() > MSG_SIZE){
             cerr << "[!] ERROR~ Message must not be longer than 128 characters" << endl;
         }
         else{
-            send(msg);
+            stringstream tokenizer(msg);
+            string code;
+
+            getline(tokenizer, code, ' ');
+            
+            if(code == "SEND"){
+                getline(tokenizer, msg);
+                send(SEND, msg);
+            }
+            else{
+                cout << "[!] ERROR~ Command not valid" << endl;
+            }
         }
     }
 }
