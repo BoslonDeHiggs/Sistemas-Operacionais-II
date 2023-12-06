@@ -47,7 +47,12 @@ void Server::listen(){
 
 			Packet pkt = Packet::deserialize(buffer);
 
-			cout << "[!] <" << pkt.name << ">~ " << pkt._payload << endl;
+			if(pkt.type == SEND){
+				cout << "[!] <" << pkt.name << ">~ " << pkt._payload << endl;
+			}
+			else if(pkt.type == LOGIN){
+				cout << "[!] SERVER~ " << pkt._payload << endl;
+			}
 		}
 	}
 }

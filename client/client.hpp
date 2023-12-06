@@ -18,7 +18,7 @@ public:
     
     int connect_to_udp_server(const char *ip, uint16_t port);
 
-    //void login();
+    void login();
 
     void call_sendThread();
 
