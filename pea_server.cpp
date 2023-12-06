@@ -5,6 +5,7 @@
 
 int main(){
     Server server(PORT);
+    server.init_database();
     server.open_udp_connection(PORT);
     server.listen();
 

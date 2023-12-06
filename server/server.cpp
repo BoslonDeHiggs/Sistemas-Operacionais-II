@@ -30,6 +30,13 @@ int Server::open_udp_connection(uint16_t port){
 	return 0;
 }
 
+void Server::init_database(){
+	this->database.open("database.txt", ios::in | ios::out);
+	if(!database.is_open()){
+		cout << "[!] SERVER~ Error while opening file";
+	}
+}
+
 void Server::listen(){
 	while (true){
 		// Receive data
@@ -52,12 +59,13 @@ void Server::listen(){
 			}
 			else if(pkt.type == LOGIN){
 				cout << "[!] SERVER~ " << pkt._payload << endl;
+				this->database << pkt.name << endl;
 			}
 		}
 	}
 }
 
-void appendUserNameToFile(const string& content, const string& filename) {
+/* void appendUserNameToFile(const string& content, const string& filename) {
     // Open the file in append mode
     ofstream outFile(filename, ios::app);
 
@@ -72,9 +80,9 @@ void appendUserNameToFile(const string& content, const string& filename) {
     } else {
         std::cerr << "Unable to open the file for appending." << endl;
     }
-}
+} */
 
-bool isUserNameInFile(const string& name, const string& filename) {
+/* bool isUserNameInFile(const string& name, const string& filename) {
     ifstream inFile(filename);
 
     if (inFile.is_open()) {
@@ -92,13 +100,13 @@ bool isUserNameInFile(const string& name, const string& filename) {
         cerr << "Unable to open the file for reading." << endl;
         return false; // Error reading the file
     }
-}
+} */
 
-void processUserName(const string& name, const string& filename) {
+/* void processUserName(const string& name, const string& filename) {
     if (isUserNameInFile(name, filename)) {
         cout << "User Name is already in the file." << endl;
     } else {
         // Append the name to the file
         appendUserNameToFile(name, filename);
     }
-}
+} */
