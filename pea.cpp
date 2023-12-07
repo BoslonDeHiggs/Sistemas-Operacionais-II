@@ -11,9 +11,10 @@ int main(int argc, char* argv[]){
 
     string name(argv[1]);
 
-    if(name.length() < 4 || name.length() > 20){
+    while(name.length() < 4 || name.length() > 20){
         cout << "[!] ERROR~ Name must be between 4 and 20 characters long" << endl;
-        return 0;
+        cout << "[?] Enter a valid name: ";
+        cin >> name;
     }
 
     Client client(name);
