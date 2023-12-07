@@ -31,7 +31,7 @@ int Server::open_udp_connection(uint16_t port){
 }
 
 void Server::init_database(){
-	this->database.open("database.txt", ios::in | ios::out);
+	this->database.open("database.txt", ios::app);
 	if(!database.is_open()){
 		cout << "[!] SERVER~ Error while opening file";
 	}
@@ -58,6 +58,7 @@ void Server::listen(){
 				cout << "[!] <" << pkt.name << ">~ " << pkt._payload << endl;
 			}
 			else if(pkt.type == LOGIN){
+				string name;
 				cout << "[!] SERVER~ " << pkt._payload << endl;
 				this->database << pkt.name << endl;
 			}
