@@ -5,7 +5,7 @@
 using namespace std;
 
 Client::Client(string input){
-    this->c_info.name = "@"+input;
+    this->c_info.name = "@" + input;
 }
 
 int Client::connect_to_udp_server(const char *ip, uint16_t port){

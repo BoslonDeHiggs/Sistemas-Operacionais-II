@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../database/database.hpp"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -24,5 +25,5 @@ public:
 private:
 	int udpSocket;
     sockaddr_in serverAddress;
-    fstream database;
+    Database database;
 };
