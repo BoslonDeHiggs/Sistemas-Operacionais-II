@@ -10,6 +10,11 @@ int Database::open(){
 }
 
 int Database::find(string user){
+    string line;
+    while(getline(this->file, line)){
+        string name;
+        // line.find(user);
+    }
     return 0;
 }
 
