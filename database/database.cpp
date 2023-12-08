@@ -1,5 +1,9 @@
 #include "database.hpp"
 #include <iostream>
+#include <bits/stdc++.h>
+#include <string>
+
+using namespace std;
 
 int Database::open(){
     this->file.open("database.txt", ios::app);
@@ -9,13 +13,19 @@ int Database::open(){
     else return -1;
 }
 
-int Database::find(string user){
+string Database::find(string user){
     string line;
-    while(getline(this->file, line)){
+    bool found = false;
+    while(getline(this->file, line) && !found){
         string name;
-        // line.find(user);
+        stringstream aux(line);
+        getline(aux, name, ':');
+        if(name == user){
+            found = true;
+            return line;
+        }
     }
-    return 0;
+    return "";
 }
 
 void Database::close(){

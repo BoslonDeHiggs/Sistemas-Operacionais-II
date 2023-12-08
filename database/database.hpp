@@ -9,11 +9,13 @@ class Database
 public:
     int open();
 
-    int find(string user);
+    string find(string user);
 
     void close();
 
 private:
+    
+
     fstream file;
 
 };

@@ -58,8 +58,13 @@ void Server::listen(){
 				cout << "[!] <" << pkt.name << ">~ " << pkt._payload << endl;
 			}
 			else if(pkt.type == LOGIN){
-				string name;
+				string line;
 				cout << "[!] SERVER~ " << pkt._payload << endl;
+				line = database.find(pkt.name);
+				if(line == ""){
+					cout << "[!] SERVER~ User doesn't have account" << endl;
+					cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
+				}
 			}
 		}
 	}
