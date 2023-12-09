@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../packet/packet.hpp"
 #include "../database/database.hpp"
 #include <iostream>
 #include <cstring>
@@ -9,6 +10,7 @@
 #include <thread>
 #include <arpa/inet.h>
 #include <fstream>
+#include <queue>
 
 using namespace std;
 
@@ -22,8 +24,12 @@ public:
 
     void listen();
 
+    void process();
+
 private:
 	int udpSocket;
     sockaddr_in serverAddress;
     Database database;
+    queue<Packet> pkts_queue;
+    vector<user> connected_users;
 };

@@ -53,6 +53,7 @@ void Server::listen(){
 			buffer[bytesRead] = '\0'; // Null-terminate the received data
 
 			Packet pkt = Packet::deserialize(buffer);
+			pkts_queue.push(pkt);
 
 			if(pkt.type == SEND){
 				cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
@@ -86,3 +87,35 @@ void Server::listen(){
 		}
 	}
 }
+
+/* void Server::process(){
+	if(pkt.type == SEND){
+		cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+	}
+	else if(pkt.type == LOGIN){
+		bool in_database; 
+		cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
+		in_database = database.contains(pkt.name);
+		if(!in_database){
+			cout << "[!] SERVER~ User doesn't have an account" << endl;
+			cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
+			database.add_user(pkt.name);
+		}
+		else{
+			cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+		}
+	}
+	else if(pkt.type == FOLLOW){
+		bool in_database = database.contains(pkt._payload);
+		if(in_database){
+			user follower;
+			follower.name = pkt.name;
+			follower.address = clientAddress;
+			database.add_followers(pkt._payload, follower);
+			cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+		}
+		else{
+			cout << "[!] SERVER~ Something went wrong" << endl;
+		}
+	}
+} */
