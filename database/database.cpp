@@ -13,19 +13,40 @@ int Database::open(){
     else return -1;
 }
 
-string Database::find(string user){
-    string line;
-    bool found = false;
-    while(getline(this->file, line) && !found){
-        string name;
-        stringstream aux(line);
-        getline(aux, name, ':');
-        if(name == user){
-            found = true;
-            return line;
-        }
+bool Database::contains(string username){
+    map<string, vector<user>>::iterator it;
+    it = data.find(username);
+    if(it == data.end()){
+        return false;
     }
-    return "";
+    else return true;
+}
+
+void Database::add_user(string username){
+    vector<user> aux;
+    data.insert({username, aux});
+}
+
+vector<user> Database::get_followers(string username){
+    if(this->contains(username)){
+        map<string, vector<user>>::iterator it;
+        it = data.find(username);
+        return it->second;
+    }
+    else{
+        vector<user> null;
+        return null;
+    }
+}
+
+bool Database::add_followers(string username, user follower){
+    if(this->contains(username)){
+        map<string, vector<user>>::iterator it;
+        it = data.find(username);
+        it->second.push_back(follower);
+        return true;
+    }
+    else return false;
 }
 
 void Database::close(){

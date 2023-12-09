@@ -28,9 +28,12 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
 }
 
 void Client::login(){
-    string msg("Request for login from ");
-    msg.append(this->c_info.name);
+    string msg("Request for login");
     Client::send(LOGIN, msg);
+}
+
+void Client::follow(string username){
+    Client::send(FOLLOW, username);
 }
 
 void Client::send(uint16_t code, string payload){
@@ -63,6 +66,10 @@ void Client::get_input(){
             if(code == "SEND"){
                 getline(tokenizer, msg);
                 send(SEND, msg);
+            }
+            else if(code == "FOLLOW"){
+                getline(tokenizer, msg);
+                send(FOLLOW, msg);
             }
             else{
                 cout << "[!] ERROR~ Command not valid" << endl;

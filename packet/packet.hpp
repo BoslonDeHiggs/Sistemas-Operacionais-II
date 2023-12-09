@@ -8,7 +8,8 @@
 #define NUM_PARAM 5
 
 #define SEND 100
-#define LOGIN 999
+#define LOGIN 200
+#define FOLLOW 300
 
 using namespace std;
 

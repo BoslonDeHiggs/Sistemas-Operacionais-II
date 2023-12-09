@@ -20,6 +20,8 @@ public:
 
     void login();
 
+    void follow(string username);
+
     void call_sendThread();
 
 private:
