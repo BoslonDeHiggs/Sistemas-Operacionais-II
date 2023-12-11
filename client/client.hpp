@@ -24,6 +24,8 @@ public:
 
     void call_sendThread();
 
+    void call_listenThread();
+
 private:
     struct client{
         string name;
@@ -35,4 +37,6 @@ private:
     void send(uint16_t code, string msg_in);
 
     void get_input();
+
+    void listen();
 };

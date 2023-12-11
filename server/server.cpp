@@ -57,6 +57,10 @@ void Server::listen(){
 
 			if(pkt.type == SEND){
 				cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+				vector<user> followers = database.get_followers(pkt.name);
+				for(auto follower : followers){
+					send(follower.address, pkt.name, pkt._payload);
+				}
 			}
 			else if(pkt.type == LOGIN){
 				bool in_database; 
@@ -86,6 +90,18 @@ void Server::listen(){
 			}
 		}
 	}
+}
+
+void Server::send(sockaddr_in clientAddress, string clientName, string payload){
+    Packet packet(0, 0, payload.length(), time(NULL), clientName, payload);
+
+    string aux = packet.serialize();
+
+    const char* message = aux.c_str();
+    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
+    if (bytesSent == -1) {
+        std::cerr << "[!] SERVER~ Error sending data to client" << std::endl;
+    }
 }
 
 /* void Server::process(){

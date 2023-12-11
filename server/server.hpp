@@ -24,6 +24,8 @@ public:
 
     void listen();
 
+    void send(sockaddr_in clientAddress, string clientName, string payload);
+
     void process();
 
 private:

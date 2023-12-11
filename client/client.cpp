@@ -78,7 +78,33 @@ void Client::get_input(){
     }
 }
 
+void Client::listen(){
+    while (true){
+        // Receive data
+        char buffer[1024];
+        socklen_t serverAddressLenght = sizeof(serverAddress);
+        ssize_t bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&serverAddress, &serverAddressLenght);
+
+        if (bytesRead == -1) {
+            std::cerr << "[!] ERROR~ Error receiving data" << std::endl;
+        }
+        else{
+            // Print received data
+            buffer[bytesRead] = '\0'; // Null-terminate the received data
+
+            Packet pkt = Packet::deserialize(buffer);
+
+            cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+        }
+    }
+}
+
 void Client::call_sendThread(){
     thread sendThread(&Client::get_input, this);
     sendThread.join();
+}
+
+void Client::call_listenThread(){
+    thread listenThread(&Client::listen, this);
+    listenThread.join();
 }
