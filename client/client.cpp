@@ -24,25 +24,30 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     serverAddress.sin_port = htons(port);
     bzero(&(serverAddress.sin_zero), 8);
 
+    if (connect(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+        std::cerr << "[!] ERROR~ Error connecting to server" << std::endl;
+        return -200;
+    }
+
     return 0;
 }
 
 void Client::login(){
     string msg("Request for login");
-    Client::send(LOGIN, msg);
+    Client::send_pkt(LOGIN, msg);
 }
 
 void Client::follow(string username){
-    Client::send(FOLLOW, username);
+    Client::send_pkt(FOLLOW, username);
 }
 
-void Client::send(uint16_t code, string payload){
+void Client::send_pkt(uint16_t code, string payload){
     Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
 
     string aux = packet.serialize();
 
     const char* message = aux.c_str();
-    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
+    ssize_t bytesSent = send(udpSocket, message, strlen(message), 0);
     if (bytesSent == -1) {
         std::cerr << "[!] ERROR~ Error sending data to server" << std::endl;
     }
@@ -65,11 +70,11 @@ void Client::get_input(){
             
             if(code == "SEND"){
                 getline(tokenizer, msg);
-                send(SEND, msg);
+                send_pkt(SEND, msg);
             }
             else if(code == "FOLLOW"){
                 getline(tokenizer, msg);
-                send(FOLLOW, msg);
+                send_pkt(FOLLOW, msg);
             }
             else{
                 cout << "[!] ERROR~ Command not valid" << endl;
@@ -79,17 +84,11 @@ void Client::get_input(){
 }
 
 void Client::listen(){
-    if (bind(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-		std::cerr << "[!] ERROR~ Error binding socket" << std::endl;
-		close(udpSocket);
-        exit(-1);
-	}
-
     while (true){
         // Receive data
         char buffer[1024];
         socklen_t serverAddressLenght = sizeof(serverAddress);
-        ssize_t bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&serverAddress, &serverAddressLenght);
+        ssize_t bytesRead = recv(udpSocket, buffer, sizeof(buffer), 0);
 
         if (bytesRead == -1) {
             std::cerr << "[!] ERROR~ Error receiving data" << std::endl;

@@ -34,7 +34,7 @@ private:
     int udpSocket;
     sockaddr_in serverAddress;
 
-    void send(uint16_t code, string msg_in);
+    void send_pkt(uint16_t code, string msg_in);
 
     void get_input();
 
