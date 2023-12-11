@@ -79,6 +79,12 @@ void Client::get_input(){
 }
 
 void Client::listen(){
+    if (bind(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
+		std::cerr << "[!] ERROR~ Error binding socket" << std::endl;
+		close(udpSocket);
+        exit(-1);
+	}
+
     while (true){
         // Receive data
         char buffer[1024];
