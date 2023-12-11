@@ -6,7 +6,7 @@
 using namespace std;
 
 int Database::open(){
-    this->file.open("database.txt", ios::app);
+    this->file.open("database/database.txt", ios::app);
     if(file.is_open()){
         return 0;
     }
