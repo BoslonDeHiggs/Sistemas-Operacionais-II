@@ -20,20 +20,26 @@ typedef struct user{
 class Database
 {
 public:
+    map<string, vector<sockaddr_in>> addressMap;
+
     int open();
 
     bool contains(string username);
 
     void add_user(string username);
 
-    vector<user> get_followers(string username);
+    vector<string> get_followers(string username);
 
-    bool add_followers(string username, user follower);
+    bool add_follower(string username, string follower);
+
+    void login(string username, sockaddr_in address);
+
+    void sign_up(string username, sockaddr_in address);
 
     void close();
 
 private:
-    map<string, vector<user>> data;
+    map<string, vector<string>> followersMap;
 
     fstream file;
 

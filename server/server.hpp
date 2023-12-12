@@ -33,5 +33,4 @@ private:
     sockaddr_in serverAddress;
     Database database;
     queue<Packet> pkts_queue;
-    vector<user> connected_users;
 };

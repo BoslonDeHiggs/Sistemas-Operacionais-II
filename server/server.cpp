@@ -57,9 +57,12 @@ void Server::listen(){
 
 			if(pkt.type == SEND){
 				cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
-				vector<user> followers = database.get_followers(pkt.name);
-				for(user follower : followers){
-					send(follower.address, pkt.name, pkt._payload);
+				vector<string> followers = database.get_followers(pkt.name);
+				for(string follower : followers){
+					map<string, vector<sockaddr_in>>::iterator it;
+					it = database.addressMap.find(follower);
+					for(sockaddr_in address : it->second)
+						send(address, pkt.name, pkt._payload);
 				}
 			}
 			else if(pkt.type == LOGIN){
@@ -69,19 +72,17 @@ void Server::listen(){
 				if(!in_database){
 					cout << "[!] SERVER~ User doesn't have an account" << endl;
 					cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
-					database.add_user(pkt.name);
+					database.sign_up(pkt.name, clientAddress);
 				}
 				else{
 					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+					database.login(pkt.name, clientAddress);
 				}
 			}
 			else if(pkt.type == FOLLOW){
 				bool in_database = database.contains(pkt._payload);
 				if(in_database){
-					user follower;
-					follower.name = pkt.name;
-					follower.address = clientAddress;
-					database.add_followers(pkt._payload, follower);
+					database.add_follower(pkt._payload, pkt.name);
 					cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
 				}
 				else{
