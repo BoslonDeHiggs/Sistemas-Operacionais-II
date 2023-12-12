@@ -98,8 +98,10 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
-            cout.flush();
+            std::cout << "\033[1A\033[2K\r" << std::flush;
             cout << "\r[!] " << pkt.name << "~ " << pkt._payload << endl;
+            cout.flush();
+            cout << "[#] " << this->c_info.name << "~ ";
         }
     }
 }
