@@ -87,7 +87,6 @@ void Client::listen(){
     while (true){
         // Receive data
         char buffer[1024];
-        socklen_t serverAddressLenght = sizeof(serverAddress);
         ssize_t bytesRead = recv(udpSocket, buffer, sizeof(buffer), 0);
 
         if (bytesRead == -1) {
@@ -99,7 +98,8 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
-            cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+            cout.flush();
+            cout << "\r[!] " << pkt.name << "~ " << pkt._payload << endl;
         }
     }
 }
@@ -111,5 +111,5 @@ void Client::call_sendThread(){
 
 void Client::call_listenThread(){
     thread listenThread(&Client::listen, this);
-    listenThread.join();
+    listenThread.detach();
 }

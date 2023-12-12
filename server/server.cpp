@@ -58,7 +58,7 @@ void Server::listen(){
 			if(pkt.type == SEND){
 				cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
 				vector<user> followers = database.get_followers(pkt.name);
-				for(auto follower : followers){
+				for(user follower : followers){
 					send(follower.address, pkt.name, pkt._payload);
 				}
 			}
