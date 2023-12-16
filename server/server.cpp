@@ -92,11 +92,13 @@ void Server::process(){
 				cout << "[!] SERVER~ User doesn't have an account" << endl;
 				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
 				database.sign_up(pkt.name, clientAddress);
+				send(clientAddress, "SERVER", "Account created successfully");
 			}
 			else{
 				if(database.addressMap.find(pkt.name)->second.size() < 2){
 					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
 					database.login(pkt.name, clientAddress);
+					send(clientAddress, "SERVER", "Login successfull");
 				}
 				else{
 					send(clientAddress, "SERVER", "There are two other sessions already active");
@@ -119,14 +121,21 @@ void Server::process(){
 				else if(pkt.type == FOLLOW){
 					bool in_database = database.contains(pkt._payload);
 					if(in_database){
-						database.add_follower(pkt._payload, pkt.name);
-						cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+						if(pkt._payload != pkt.name){
+							database.add_follower(pkt._payload, pkt.name);
+							cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+							send(clientAddress, "SERVER", "You started following " + pkt._payload);
+						}
+						else{
+							send(clientAddress, "SERVER", "Can't follow self");
+						}
 					}
 					else{
 						cout << "[!] SERVER~ Something went wrong" << endl;
+						send(clientAddress, "SERVER", "Something went wrong");
 					}
 				}
-				else if(pkt.type == EXIT){
+/* 				else if(pkt.type == EXIT){
 					bool in_database = database.contains(pkt._payload);
 					if(in_database){
 						database.exit(pkt.name, clientAddress);
@@ -135,7 +144,7 @@ void Server::process(){
 					else{
 						cout << "[!] SERVER~ Something went wrong" << endl;
 					}
-				}
+				} */
 			}
 		}
 	}
