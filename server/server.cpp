@@ -104,8 +104,8 @@ void Server::process(){
 			}
 		}
 		else{
-			bool in_database = database.is_logged_in(pkt.name, clientAddress);
-			if(in_database){
+			bool logged = database.is_logged_in(pkt.name, clientAddress);
+			if(logged){
 				if(pkt.type == SEND){
 					cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
 					vector<string> followers = database.get_followers(pkt.name);
