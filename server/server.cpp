@@ -53,42 +53,12 @@ void Server::listen(){
 			buffer[bytesRead] = '\0'; // Null-terminate the received data
 
 			Packet pkt = Packet::deserialize(buffer);
-			pkts_queue.push(pkt);
 
-			if(pkt.type == SEND){
-				cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
-				vector<string> followers = database.get_followers(pkt.name);
-				for(string follower : followers){
-					map<string, vector<sockaddr_in>>::iterator it;
-					it = database.addressMap.find(follower);
-					for(sockaddr_in address : it->second)
-						send(address, pkt.name, pkt._payload);
-				}
-			}
-			else if(pkt.type == LOGIN){
-				bool in_database; 
-				cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
-				in_database = database.contains(pkt.name);
-				if(!in_database){
-					cout << "[!] SERVER~ User doesn't have an account" << endl;
-					cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
-					database.sign_up(pkt.name, clientAddress);
-				}
-				else{
-					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
-					database.login(pkt.name, clientAddress);
-				}
-			}
-			else if(pkt.type == FOLLOW){
-				bool in_database = database.contains(pkt._payload);
-				if(in_database){
-					database.add_follower(pkt._payload, pkt.name);
-					cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
-				}
-				else{
-					cout << "[!] SERVER~ Something went wrong" << endl;
-				}
-			}
+			pkt_addr packet_address(pkt, clientAddress);
+
+			unique_lock<mutex> lock(mtx);
+				pkts_queue.push(packet_address);
+			cv.notify_one();
 		}
 	}
 }
@@ -105,34 +75,59 @@ void Server::send(sockaddr_in clientAddress, string clientName, string payload){
     }
 }
 
-/* void Server::process(){
-	if(pkt.type == SEND){
-		cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+void Server::process(){
+	while(true){
+		unique_lock<mutex> lock(mtx);
+			cv.wait(lock, [this]() { return !pkts_queue.empty(); });
+			pkt_addr packet_address = pkts_queue.front();
+			pkts_queue.pop();
+
+		Packet pkt = packet_address.pkt;
+		sockaddr_in clientAddress = packet_address.addr;
+
+		if(pkt.type == SEND){
+			cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+			vector<string> followers = database.get_followers(pkt.name);
+			for(string follower : followers){
+				map<string, vector<sockaddr_in>>::iterator it;
+				it = database.addressMap.find(follower);
+				for(sockaddr_in address : it->second)
+					send(address, pkt.name, pkt._payload);
+			}
+		}
+		else if(pkt.type == LOGIN){
+			bool in_database; 
+			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
+			in_database = database.contains(pkt.name);
+			if(!in_database){
+				cout << "[!] SERVER~ User doesn't have an account" << endl;
+				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
+				database.sign_up(pkt.name, clientAddress);
+			}
+			else{
+				cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+				database.login(pkt.name, clientAddress);
+			}
+		}
+		else if(pkt.type == FOLLOW){
+			bool in_database = database.contains(pkt._payload);
+			if(in_database){
+				database.add_follower(pkt._payload, pkt.name);
+				cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+			}
+			else{
+				cout << "[!] SERVER~ Something went wrong" << endl;
+			}
+		}
 	}
-	else if(pkt.type == LOGIN){
-		bool in_database; 
-		cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
-		in_database = database.contains(pkt.name);
-		if(!in_database){
-			cout << "[!] SERVER~ User doesn't have an account" << endl;
-			cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
-			database.add_user(pkt.name);
-		}
-		else{
-			cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
-		}
-	}
-	else if(pkt.type == FOLLOW){
-		bool in_database = database.contains(pkt._payload);
-		if(in_database){
-			user follower;
-			follower.name = pkt.name;
-			follower.address = clientAddress;
-			database.add_followers(pkt._payload, follower);
-			cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
-		}
-		else{
-			cout << "[!] SERVER~ Something went wrong" << endl;
-		}
-	}
-} */
+}
+
+void Server::call_listenThread(){
+	thread listenThread(&Server::listen, this);
+	listenThread.join();
+}
+
+void Server::call_processThread(){
+	thread processThread(&Server::process, this);
+	processThread.detach();
+}

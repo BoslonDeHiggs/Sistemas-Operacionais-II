@@ -11,8 +11,18 @@
 #include <arpa/inet.h>
 #include <fstream>
 #include <queue>
+#include <semaphore>
+#include <mutex>
+#include <condition_variable>
 
 using namespace std;
+
+typedef struct pkt_addr{
+    Packet pkt;
+    sockaddr_in addr;
+
+    pkt_addr(Packet packet, sockaddr_in address) : pkt(packet), addr(address){}
+}pkt_addr;
 
 class Server{
 public:
@@ -22,15 +32,22 @@ public:
 
     void init_database();
 
-    void listen();
-
     void send(sockaddr_in clientAddress, string clientName, string payload);
 
-    void process();
+    void call_listenThread();
+
+    void call_processThread();
 
 private:
 	int udpSocket;
     sockaddr_in serverAddress;
     Database database;
-    queue<Packet> pkts_queue;
+    queue<pkt_addr> pkts_queue;
+
+    mutex mtx;
+    condition_variable cv;
+
+    void listen();
+
+    void process();
 };

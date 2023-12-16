@@ -7,7 +7,8 @@ int main(){
     Server server(PORT);
     server.init_database();
     server.open_udp_connection(PORT);
-    server.listen();
+    server.call_processThread();
+    server.call_listenThread();
 
     return 0;
 }
