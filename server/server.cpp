@@ -105,6 +105,7 @@ void Server::process(){
 				database.sign_up(pkt.name, clientAddress);
 			}
 			else{
+				// Implementar semáforo para restringir até 2 sessões
 				cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
 				database.login(pkt.name, clientAddress);
 			}
