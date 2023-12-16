@@ -19,6 +19,9 @@ int main(int argc, char* argv[]){
     Client client(name);
     client.connect_to_udp_server(argv[2], PORT);
     client.login();
+
+    // signal(SIGINT, Client::exit);
+
     client.call_listenThread();
     client.call_sendThread();
 

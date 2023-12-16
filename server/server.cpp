@@ -85,39 +85,57 @@ void Server::process(){
 		Packet pkt = packet_address.pkt;
 		sockaddr_in clientAddress = packet_address.addr;
 
-		if(pkt.type == SEND){
-			cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
-			vector<string> followers = database.get_followers(pkt.name);
-			for(string follower : followers){
-				map<string, vector<sockaddr_in>>::iterator it;
-				it = database.addressMap.find(follower);
-				for(sockaddr_in address : it->second)
-					send(address, pkt.name, pkt._payload);
-			}
-		}
-		else if(pkt.type == LOGIN){
-			bool in_database; 
+		if(pkt.type == LOGIN){
 			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
-			in_database = database.contains(pkt.name);
+			bool in_database = database.contains(pkt.name);
 			if(!in_database){
 				cout << "[!] SERVER~ User doesn't have an account" << endl;
 				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
 				database.sign_up(pkt.name, clientAddress);
 			}
 			else{
-				// Implementar semáforo para restringir até 2 sessões
-				cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
-				database.login(pkt.name, clientAddress);
+				if(database.addressMap.find(pkt.name)->second.size() < 2){
+					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+					database.login(pkt.name, clientAddress);
+				}
+				else{
+					send(clientAddress, "SERVER", "There are two other sessions already active");
+				}
 			}
 		}
-		else if(pkt.type == FOLLOW){
-			bool in_database = database.contains(pkt._payload);
+		else{
+			bool in_database = database.is_logged_in(pkt.name, clientAddress);
 			if(in_database){
-				database.add_follower(pkt._payload, pkt.name);
-				cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
-			}
-			else{
-				cout << "[!] SERVER~ Something went wrong" << endl;
+				if(pkt.type == SEND){
+					cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+					vector<string> followers = database.get_followers(pkt.name);
+					for(string follower : followers){
+						map<string, vector<sockaddr_in>>::iterator it;
+						it = database.addressMap.find(follower);
+						for(sockaddr_in address : it->second)
+							send(address, pkt.name, pkt._payload);
+					}
+				}
+				else if(pkt.type == FOLLOW){
+					bool in_database = database.contains(pkt._payload);
+					if(in_database){
+						database.add_follower(pkt._payload, pkt.name);
+						cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+					}
+					else{
+						cout << "[!] SERVER~ Something went wrong" << endl;
+					}
+				}
+				else if(pkt.type == EXIT){
+					bool in_database = database.contains(pkt._payload);
+					if(in_database){
+						database.exit(pkt.name, clientAddress);
+						cout << "[!] SERVER~ " << pkt.name << " exited" << endl;
+					}
+					else{
+						cout << "[!] SERVER~ Something went wrong" << endl;
+					}
+				}
 			}
 		}
 	}

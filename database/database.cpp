@@ -51,6 +51,16 @@ void Database::sign_up(string username, sockaddr_in address){
     }
 }
 
+void Database::exit(string username, sockaddr_in address){
+    map<string, vector<sockaddr_in>>::iterator it_am;
+    it_am = addressMap.find(username);
+    if(it_am != addressMap.end()){
+        vector<sockaddr_in>::iterator it = find(it_am->second.begin(), it_am->second.end(), address);
+        if(it != it_am->second.end())
+            it_am->second.erase(it);
+    }
+}
+
 bool Database::contains(string username){
     map<string, vector<string>>::iterator it;
     it = followersMap.find(username);
@@ -58,6 +68,21 @@ bool Database::contains(string username){
         return false;
     }
     else return true;
+}
+
+bool Database::is_logged_in(string username, sockaddr_in address){
+    map<string, vector<sockaddr_in>>::iterator it_am;
+    it_am = addressMap.find(username);
+    if(it_am == addressMap.end()){
+        return false;
+    }
+    else{
+        vector<sockaddr_in>::iterator it = find(it_am->second.begin(), it_am->second.end(), address);
+        if(it != it_am->second.end())
+            return true;
+        else
+            return false;
+    }
 }
 
 vector<string> Database::get_followers(string username){

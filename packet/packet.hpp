@@ -10,6 +10,7 @@
 #define SEND 100
 #define LOGIN 200
 #define FOLLOW 300
+#define EXIT 400
 
 using namespace std;
 

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <thread>
+#include <csignal>
 
 #define BUFFER_SIZE 256
 
@@ -19,6 +20,8 @@ public:
     int connect_to_udp_server(const char *ip, uint16_t port);
 
     void login();
+
+    static void exit(int signal);
 
     void follow(string username);
 

@@ -26,6 +26,8 @@ public:
 
     bool contains(string username);
 
+    bool is_logged_in(string username, sockaddr_in address);
+
     void add_user(string username);
 
     vector<string> get_followers(string username);
@@ -35,6 +37,8 @@ public:
     void login(string username, sockaddr_in address);
 
     void sign_up(string username, sockaddr_in address);
+
+    void exit(string username, sockaddr_in address);
 
     void close();
 
