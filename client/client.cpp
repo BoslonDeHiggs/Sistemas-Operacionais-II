@@ -56,24 +56,25 @@ void Client::send_pkt(uint16_t code, string payload){
 void Client::get_input(){
     while (true){
         char input[BUFFER_SIZE];
-        cout << "[#] " << this->c_info.name << "~ ";
         fgets(input, BUFFER_SIZE, stdin);
         string msg = input;
+        
+        cout << "\033[F\033[K[#] " << this->c_info.name << "~ " << msg << "\033[E";
+        
+        stringstream tokenizer(msg);
+        string code;
+
+        getline(tokenizer, code, ' ');
+        getline(tokenizer, msg);
+
         if(msg.size() > MSG_SIZE){
             cerr << "[!] ERROR~ Message must not be longer than 128 characters" << endl;
         }
         else{
-            stringstream tokenizer(msg);
-            string code;
-
-            getline(tokenizer, code, ' ');
-            
             if(code == "SEND"){
-                getline(tokenizer, msg);
                 send_pkt(SEND, msg);
             }
             else if(code == "FOLLOW"){
-                getline(tokenizer, msg);
                 send_pkt(FOLLOW, msg);
             }
             else{
@@ -99,7 +100,7 @@ void Client::listen(){
             Packet pkt = Packet::deserialize(buffer);
 
             // std::cout << "\033[1A\033[2K\r" << std::flush;
-            cout << "\r[!] " << pkt.name << "~ " << pkt._payload << endl;
+            cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
         }
     }
 }
