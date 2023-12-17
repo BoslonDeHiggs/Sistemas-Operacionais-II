@@ -134,6 +134,7 @@ void Server::process(){
 						if(pkt._payload != pkt.name){
 							bool successfull = database.add_follower(pkt._payload, pkt.name);
 							if(successfull){
+								database.write();
 								cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
 								send(clientAddress, "SERVER", "You started following " + pkt._payload);
 							}

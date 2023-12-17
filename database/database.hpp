@@ -21,10 +21,13 @@ typedef struct user{
 class Database
 {
 public:
+    map<string, vector<string>> followersMap;
     map<string, vector<sockaddr_in>> addressMap;
     map<string, queue<Packet>> messageQueue;
 
     int open();
+
+    void write();
 
     bool contains(string username);
 
@@ -47,8 +50,6 @@ public:
     void close();
 
 private:
-    map<string, vector<string>> followersMap;
-
     fstream file;
 
 };

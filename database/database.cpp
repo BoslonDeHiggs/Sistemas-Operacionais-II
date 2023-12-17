@@ -121,6 +121,16 @@ bool Database::add_follower(string username, string follower){
     else return false;
 }
 
+void Database::write(){
+    for(auto index : followersMap){
+        file << index.first << ":";
+        for(auto name : index.second){
+            file << name << ";";
+        }
+        file << endl;
+    }
+}
+
 void Database::close(){
     this->file.close();
 }
