@@ -99,8 +99,11 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
-            // std::cout << "\033[1A\033[2K\r" << std::flush;
-            cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+            if(pkt.name == "SERVER"){
+                cout << "\033[1;34m[!] " << pkt.name << "~ " << pkt._payload << "\033[0m" << endl;
+            }
+            else
+                cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
         }
     }
 }
