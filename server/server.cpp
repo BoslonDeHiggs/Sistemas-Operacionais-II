@@ -35,6 +35,7 @@ void Server::init_database(){
 	if(code == -1){
 		cerr << "[!] ERROR~ Error while opening file" << endl;
 	}
+	this->database.read();
 }
 
 void Server::listen(){
@@ -85,6 +86,11 @@ void Server::process(){
 		Packet pkt = packet_address.pkt;
 		sockaddr_in clientAddress = packet_address.addr;
 
+		if (pkt.type == EXIT) {	//Teste inicial para encerrar sessao
+    		// Aqui, implemente a lógica para lidar com o encerramento da sessão do cliente
+    		std::cout << "[!] SERVER~ Cliente " << pkt.name << " encerrou a sessão." << std::endl;
+    		// Outras ações, como remover o cliente da lista de clientes ativos, etc.
+		}
 		if(pkt.type == LOGIN){
 			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
 			bool in_database = database.contains(pkt.name);

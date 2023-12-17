@@ -122,13 +122,52 @@ bool Database::add_follower(string username, string follower){
 }
 
 void Database::write(){
-    for(auto index : followersMap){
-        file << index.first << ":";
-        for(auto name : index.second){
-            file << name << ";";
-        }
-        file << endl;
+    // Abre o arquivo para escrita, limpando o conteúdo existente
+    std::ofstream file("database/database.txt", std::ios::trunc);
+
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo para escrita" << std::endl;
+        return;
     }
+
+    // Escreve cada entrada do map followersMap no arquivo
+    for (const auto& pair : followersMap) {
+        file << pair.first << ":";
+        for (const auto& follower : pair.second) {
+            file << follower << ";";
+        }
+        file << std::endl;
+    }
+
+    // Fecha o arquivo
+    file.close();
+}
+
+void Database::read() {
+    std::ifstream file("database/database.txt");
+
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo para leitura" << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (getline(file, line)) {
+        std::stringstream ss(line);
+        std::string username, followers;
+        getline(ss, username, ':');
+        getline(ss, followers);
+
+        std::stringstream ss_followers(followers);
+        std::string follower;
+        while (getline(ss_followers, follower, ';')) {
+            if (!follower.empty()) {
+                followersMap[username].push_back(follower);
+            }
+        }
+    }
+
+    file.close();
 }
 
 void Database::close(){

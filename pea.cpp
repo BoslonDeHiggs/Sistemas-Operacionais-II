@@ -17,6 +17,7 @@ int main(int argc, char* argv[]){
     }
 
     Client client(name);
+    globalSession = &client;
     client.connect_to_udp_server(argv[2], PORT);
     client.login();
 

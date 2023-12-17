@@ -29,6 +29,8 @@ public:
 
     void write();
 
+    void read();
+
     bool contains(string username);
 
     bool is_logged_in_addr(string username, sockaddr_in address);
