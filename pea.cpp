@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
     client.connect_to_udp_server(argv[2], PORT);
     client.login();
 
-    // signal(SIGINT, Client::exit);
+    /* signal(SIGINT, Client::exit); */
 
     client.call_listenThread();
     client.call_sendThread();

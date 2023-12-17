@@ -33,8 +33,7 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
 }
 
 void Client::login(){
-    string msg("Request for login");
-    Client::send_pkt(LOGIN, msg);
+    Client::send_pkt(LOGIN, "Request for login");
 }
 
 void Client::follow(string username){
@@ -99,9 +98,8 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
-            if(pkt.name == "SERVER"){
+            if(pkt.name == "SERVER")
                 cout << "\033[1;34m[!] " << pkt.name << "~ " << pkt._payload << "\033[0m" << endl;
-            }
             else
                 cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
         }

@@ -135,7 +135,7 @@ void Server::process(){
 						send(clientAddress, "SERVER", "Something went wrong");
 					}
 				}
-/* 				else if(pkt.type == EXIT){
+ 				else if(pkt.type == EXIT){
 					bool in_database = database.contains(pkt._payload);
 					if(in_database){
 						database.exit(pkt.name, clientAddress);
@@ -144,7 +144,7 @@ void Server::process(){
 					else{
 						cout << "[!] SERVER~ Something went wrong" << endl;
 					}
-				} */
+				}
 			}
 		}
 	}
