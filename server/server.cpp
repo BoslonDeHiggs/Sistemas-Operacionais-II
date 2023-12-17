@@ -35,6 +35,7 @@ void Server::init_database(){
 	if(code == -1){
 		cerr << "[!] ERROR~ Error while opening file" << endl;
 	}
+	this->database.read();
 }
 
 void Server::listen(){
@@ -85,6 +86,7 @@ void Server::process(){
 		Packet pkt = packet_address.pkt;
 		sockaddr_in clientAddress = packet_address.addr;
 
+		
 		if(pkt.type == LOGIN){
 			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
 			bool in_database = database.contains(pkt.name);
@@ -93,10 +95,11 @@ void Server::process(){
 				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
 				database.sign_up(pkt.name, clientAddress);
 				send(clientAddress, "SERVER", "Account created successfully");
+				database.write();
 			}
 			else{
 				if(database.addressMap.find(pkt.name)->second.size() < 2){
-					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+					cout << "[!] SERVER~ " << pkt.name << " logging in" << endl;
 					database.login(pkt.name, clientAddress);
 					send(clientAddress, "SERVER", "Login successfull");
 					while(!database.messageQueue[pkt.name].empty()){
@@ -150,13 +153,13 @@ void Server::process(){
 					}
 				}
  				else if(pkt.type == EXIT){
-					bool in_database = database.contains(pkt._payload);
+					bool in_database = database.contains(pkt.name);
 					if(in_database){
 						database.exit(pkt.name, clientAddress);
 						cout << "[!] SERVER~ " << pkt.name << " exited" << endl;
 					}
 					else{
-						cout << "[!] SERVER~ Something went wrong" << endl;
+						cout << "[!] SERVER~ Something went wrong while logging out" << endl;
 					}
 				}
 			}

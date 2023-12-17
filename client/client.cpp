@@ -4,8 +4,20 @@
 
 using namespace std;
 
+//int globalUdpSocket; //Variavel global para armazenar udpSocket
+//Client* globalSession = nullptr;
+Client* globalClientPointer = nullptr;
+
 Client::Client(string input){
     this->c_info.name = "@" + input;
+
+    //globalUdpSocket = udpSocket;
+    globalClientPointer = this;
+    std::signal(SIGINT, Client::signalHandler); //Teste inicial para encerrar sessao
+}
+
+Client::~Client() {
+    globalClientPointer = nullptr;
 }
 
 int Client::connect_to_udp_server(const char *ip, uint16_t port){
@@ -42,6 +54,7 @@ void Client::follow(string username){
 
 void Client::send_pkt(uint16_t code, string payload){
     Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
+    cout << "Comprimento: " <<payload.length() << endl;
 
     string aux = packet.serialize();
 
@@ -57,9 +70,9 @@ void Client::get_input(){
         char input[BUFFER_SIZE];
         fgets(input, BUFFER_SIZE, stdin);
         string msg = input;
-        
+
         cout << "\033[F\033[K[#] " << this->c_info.name << "~ " << msg << "\033[E";
-        
+
         stringstream tokenizer(msg);
         string code;
 
@@ -114,4 +127,22 @@ void Client::call_sendThread(){
 void Client::call_listenThread(){
     thread listenThread(&Client::listen, this);
     listenThread.detach();
+}
+
+void Client::sendExit(){
+    Packet packet(EXIT, 0, 0, time(NULL), this->c_info.name, "Sessão encerrada");
+    std::string message = packet.serialize();
+    ssize_t bytesSent = send(udpSocket, message.c_str(), message.length(), 0);
+    if (bytesSent == -1) {
+        std::cerr << "[!] ERROR~ Erro ao enviar mensagem de encerramento para o servidor" << std::endl;
+    }
+}
+
+void Client::signalHandler(int signal) {    //Teste inicial de encerrar sessao
+    std::cout << "Encerrando a sessão (Ctrl+C capturado)." << std::endl;
+    if (globalClientPointer != nullptr) {
+        globalClientPointer->sendExit();
+    }
+
+    exit(signal);
 }
