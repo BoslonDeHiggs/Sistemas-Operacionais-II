@@ -102,7 +102,7 @@ void Server::process(){
 			}
 			else{
 				if(database.addressMap.find(pkt.name)->second.size() < 2){
-					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
+					cout << "[!] SERVER~ " << pkt.name << " logging in" << endl;
 					database.login(pkt.name, clientAddress);
 					send(clientAddress, "SERVER", "Login successfull");
 					while(!database.messageQueue[pkt.name].empty()){

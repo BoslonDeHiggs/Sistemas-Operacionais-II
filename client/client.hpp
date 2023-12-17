@@ -21,13 +21,21 @@ public:
 
     void login();
 
-    static void exit(int signal);
+    //static void exit(int signal); //Teste inicial de encerramento de sessao
 
     void follow(string username);
 
     void call_sendThread();
 
     void call_listenThread();
+
+    //void sendExit();
+
+    //~Client();
+
+    static void signalHandler(int signal); //Teste incial de encerrar sessao
+
+    //static bool encerrarSessao;
 
 private:
     struct client{
@@ -43,3 +51,6 @@ private:
 
     void listen();
 };
+
+//extern Client* globalSession;
+//bool Client::encerrarSessao = false;
