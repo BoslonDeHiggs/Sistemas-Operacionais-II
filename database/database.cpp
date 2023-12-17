@@ -86,14 +86,17 @@ bool Database::is_logged_in_addr(string username, sockaddr_in address){
 }
 
 bool Database::is_logged_in(string username){
-    map<string, vector<sockaddr_in>>::iterator it_am;
-    it_am = addressMap.find(username);
-    if(it_am == addressMap.end()){
-        return false;
-    }
-    else{
-        return true;
-    }
+    auto it = addressMap.find(username);
+    // Verifica se o usuário existe no addressMap e tem pelo menos um endereço associado.
+    return (it != addressMap.end() && !it->second.empty());
+    // map<string, vector<sockaddr_in>>::iterator it_am;
+    // it_am = addressMap.find(username);
+    // if(it_am == addressMap.end()){
+    //     return false;
+    // }
+    // else{
+    //     return true;
+    // }
 }
 
 vector<string> Database::get_followers(string username){
@@ -174,4 +177,8 @@ void Database::read() {
 
 void Database::close(){
     this->file.close();
+}
+
+void Database::storeMessageForOfflineUser(const string& username, const Packet& pkt) {
+    messageQueue[username].push(pkt);
 }

@@ -1,2 +1,3 @@
-@menin:
+@bruna:@menin;
+@menin:@paolo;@bruna;
 @paolo:@menin;

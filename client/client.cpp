@@ -54,7 +54,6 @@ void Client::follow(string username){
 
 void Client::send_pkt(uint16_t code, string payload){
     Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
-    cout << "Comprimento: " <<payload.length() << endl;
 
     string aux = packet.serialize();
 

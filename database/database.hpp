@@ -51,6 +51,8 @@ public:
 
     void close();
 
+    void storeMessageForOfflineUser(const string& username, const Packet& pkt);
+
 private:
     fstream file;
 

@@ -38,6 +38,8 @@ public:
 
     void call_processThread();
 
+    void sendPendingMessages(const string& username, const sockaddr_in& clientAddress);
+
 private:
 	int udpSocket;
     sockaddr_in serverAddress;

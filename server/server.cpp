@@ -87,28 +87,24 @@ void Server::process(){
 		sockaddr_in clientAddress = packet_address.addr;
 
 		
-		if(pkt.type == LOGIN){
+		if (pkt.type == LOGIN) {
 			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
 			bool in_database = database.contains(pkt.name);
-			if(!in_database){
+			if (!in_database) {
 				cout << "[!] SERVER~ User doesn't have an account" << endl;
 				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
 				database.sign_up(pkt.name, clientAddress);
 				send(clientAddress, "SERVER", "Account created successfully");
 				database.write();
-			}
-			else{
-				if(database.addressMap.find(pkt.name)->second.size() < 2){
+			} else {
+				auto it = database.addressMap.find(pkt.name);
+				if (it == database.addressMap.end() || it->second.size() < 2) {
 					cout << "[!] SERVER~ " << pkt.name << " logging in" << endl;
 					database.login(pkt.name, clientAddress);
-					send(clientAddress, "SERVER", "Login successfull");
-					while(!database.messageQueue[pkt.name].empty()){
-						pkt = database.messageQueue[pkt.name].front();
-						database.messageQueue[pkt.name].pop();
-						send(clientAddress, pkt.name, pkt._payload);
-					}
-				}
-				else{
+					send(clientAddress, "SERVER", "Login successful");
+					cout << "Usuario: " << pkt.name << " logando, verificando mensagens pendentes." << endl;
+					sendPendingMessages(pkt.name, clientAddress);
+				} else {
 					send(clientAddress, "SERVER", "There are two other sessions already active");
 				}
 			}
@@ -119,7 +115,7 @@ void Server::process(){
 				if(pkt.type == SEND){
 					cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
 					vector<string> followers = database.get_followers(pkt.name);
-					for(string follower : followers){
+					for(const string& follower : followers){
 						if(database.is_logged_in(follower)){
 							map<string, vector<sockaddr_in>>::iterator it;
 							it = database.addressMap.find(follower);
@@ -127,7 +123,11 @@ void Server::process(){
 								send(address, pkt.name, pkt._payload);
 						}
 						else{
-							database.messageQueue[follower].push(pkt);
+							cout << "Armazenando mensagem para ser enviada mais tarde para: " << follower << endl;
+							database.storeMessageForOfflineUser(follower, pkt);
+							if (!database.messageQueue[follower].empty()){
+								cout << "Mensagem armazenada com sucesso" << endl;
+							}
 						}
 					}
 				}
@@ -175,4 +175,13 @@ void Server::call_listenThread(){
 void Server::call_processThread(){
 	thread processThread(&Server::process, this);
 	processThread.detach();
+}
+
+void Server::sendPendingMessages(const string& username, const sockaddr_in& clientAddress) {
+    auto& queue = database.messageQueue[username];
+    while (!queue.empty()) {
+        Packet messagePkt = queue.front();
+        send(clientAddress, messagePkt.name, messagePkt._payload);
+        queue.pop();
+    }
 }
