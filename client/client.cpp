@@ -68,7 +68,13 @@ void Client::send_pkt(uint16_t code, string payload){
 void Client::get_input(){
     while (true){
         char input[BUFFER_SIZE];
-        fgets(input, BUFFER_SIZE, stdin);
+        if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
+            std::cout << "Encerrando a sessão (Ctrl+D capturado)." << std::endl;
+            if (globalClientPointer != nullptr) {
+                globalClientPointer->sendExit();
+            }
+            exit(0); // Use um código de saída apropriado
+        }
         string msg = input;
 
         cout << "\033[F\033[K[#] " << this->c_info.name << "~ " << msg << "\033[E";
@@ -139,7 +145,7 @@ void Client::sendExit(){
 }
 
 void Client::signalHandler(int signal) {    //Teste inicial de encerrar sessao
-    std::cout << "Encerrando a sessão (Ctrl+C capturado)." << std::endl;
+    std::cout << "\nEncerrando a sessão (Ctrl+C capturado)." << std::endl;
     if (globalClientPointer != nullptr) {
         globalClientPointer->sendExit();
     }
