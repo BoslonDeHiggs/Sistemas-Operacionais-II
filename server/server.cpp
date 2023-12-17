@@ -99,6 +99,11 @@ void Server::process(){
 					cout << "[!] SERVER~ " << pkt.name << " loging in" << endl;
 					database.login(pkt.name, clientAddress);
 					send(clientAddress, "SERVER", "Login successfull");
+					while(!database.messageQueue[pkt.name].empty()){
+						pkt = database.messageQueue[pkt.name].front();
+						database.messageQueue[pkt.name].pop();
+						send(clientAddress, pkt.name, pkt._payload);
+					}
 				}
 				else{
 					send(clientAddress, "SERVER", "There are two other sessions already active");
@@ -106,25 +111,33 @@ void Server::process(){
 			}
 		}
 		else{
-			bool logged = database.is_logged_in(pkt.name, clientAddress);
+			bool logged = database.is_logged_in_addr(pkt.name, clientAddress);
 			if(logged){
 				if(pkt.type == SEND){
 					cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
 					vector<string> followers = database.get_followers(pkt.name);
 					for(string follower : followers){
-						map<string, vector<sockaddr_in>>::iterator it;
-						it = database.addressMap.find(follower);
-						for(sockaddr_in address : it->second)
-							send(address, pkt.name, pkt._payload);
+						if(database.is_logged_in(follower)){
+							map<string, vector<sockaddr_in>>::iterator it;
+							it = database.addressMap.find(follower);
+							for(sockaddr_in address : it->second)
+								send(address, pkt.name, pkt._payload);
+						}
+						else{
+							database.messageQueue[follower].push(pkt);
+						}
 					}
 				}
 				else if(pkt.type == FOLLOW){
 					bool in_database = database.contains(pkt._payload);
 					if(in_database){
 						if(pkt._payload != pkt.name){
-							database.add_follower(pkt._payload, pkt.name);
-							cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
-							send(clientAddress, "SERVER", "You started following " + pkt._payload);
+							bool successfull = database.add_follower(pkt._payload, pkt.name);
+							if(successfull){
+								cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
+								send(clientAddress, "SERVER", "You started following " + pkt._payload);
+							}
+							else send(clientAddress, "SERVER", "You already follow " + pkt._payload);
 						}
 						else{
 							send(clientAddress, "SERVER", "Can't follow self");

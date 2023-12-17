@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "../packet/packet.hpp"
 
 using namespace std;
 
@@ -21,12 +22,15 @@ class Database
 {
 public:
     map<string, vector<sockaddr_in>> addressMap;
+    map<string, queue<Packet>> messageQueue;
 
     int open();
 
     bool contains(string username);
 
-    bool is_logged_in(string username, sockaddr_in address);
+    bool is_logged_in_addr(string username, sockaddr_in address);
+
+    bool is_logged_in(string username);
 
     void add_user(string username);
 
