@@ -117,9 +117,9 @@ void Client::listen(){
             Packet pkt = Packet::deserialize(buffer);
 
             if(pkt.name == "SERVER")
-                cout << "\033[1;34m[!] " << pkt.name << "~ " << pkt._payload << "\033[0m" << endl;
+                cout << "\033[1;34m[!] " << pkt.name << "~ " << pkt._payload << "          " << pkt.timestamp << "\033[0m" << endl;
             else
-                cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+                cout << "[!] " << pkt.name << "~ " << pkt._payload << "          " << pkt.timestamp << endl;
         }
     }
 }
