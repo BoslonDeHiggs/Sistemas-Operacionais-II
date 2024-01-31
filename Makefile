@@ -1,5 +1,5 @@
-C_SOURCES = pea.cpp client/client.cpp packet/packet.cpp
-S_SOURCES = pea_server.cpp server/server.cpp packet/packet.cpp database/database.cpp
+C_SOURCES = pea.cpp client/client.cpp packet/packet.cpp format/format.cpp
+S_SOURCES = pea_server.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp
 FLAGS = -std=c++20 -Wall -g
 
 cmp: pea pea_server 

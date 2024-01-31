@@ -2,6 +2,7 @@
 
 #include "../packet/packet.hpp"
 #include "../database/database.hpp"
+#include "../format/format.hpp"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -32,7 +33,7 @@ public:
 
     void init_database();
 
-    void send(sockaddr_in clientAddress, string clientName, string payload);
+    void send(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload);
 
     void call_listenThread();
 

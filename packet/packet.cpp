@@ -1,6 +1,6 @@
 #include "packet.hpp"
 
-Packet::Packet(uint16_t type, uint16_t seqn, uint16_t length, uint16_t timestamp, string name, string _payload){
+Packet::Packet(uint16_t type, uint16_t seqn, uint16_t length, time_t timestamp, string name, string _payload){
     this->type = type;
     this->seqn = seqn;
     this->length = length;
@@ -40,7 +40,7 @@ Packet Packet::deserialize(string serpkt){
 
     // cout << "Aux_str.c_str(): " << message.c_str() << endl;
 
-    Packet pkt(stoi(tokens[0]), stoi(tokens[1]), stoi(tokens[2]), stoi(tokens[3]), tokens[4], message);
+    Packet pkt(stoi(tokens[0]), stoi(tokens[1]), stoi(tokens[2]), (time_t)stoi(tokens[3]), tokens[4], message);
 
     // cout << pkt.type << ' ' << pkt.seqn << ' ' << pkt.length << ' ' << pkt.timestamp << ' ' << pkt._payload << endl;
 

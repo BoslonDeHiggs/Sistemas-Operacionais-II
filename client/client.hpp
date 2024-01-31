@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../format/format.hpp"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>

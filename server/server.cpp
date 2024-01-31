@@ -9,7 +9,7 @@ int Server::open_udp_connection(uint16_t port){
 	// Open UDP socket
 	udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (udpSocket == -1) {
-		std::cerr << "[!] ERROR~ Error creating socket" << std::endl;
+		print_error_msg("Error creating socket");
 		return -100;
 	}
 	
@@ -22,7 +22,7 @@ int Server::open_udp_connection(uint16_t port){
 
 	// Bind the socket to the address and port
 	if (bind(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-		std::cerr << "[!] ERROR~ Error binding socket" << std::endl;
+		print_error_msg("Error binding socket");
 		close(udpSocket);
 		return -200;
 	}
@@ -33,7 +33,7 @@ int Server::open_udp_connection(uint16_t port){
 void Server::init_database(){
 	int code = this->database.open();
 	if(code == -1){
-		cerr << "[!] ERROR~ Error while opening file" << endl;
+		print_error_msg("Error while opening file");
 	}
 	this->database.read();
 }
@@ -47,7 +47,7 @@ void Server::listen(){
 		ssize_t bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddress, &clientAddressLength);
 
 		if (bytesRead == -1) {
-			std::cerr << "[!] ERROR~ Error receiving data" << std::endl;
+			print_error_msg("Error receiving data");
 		}
 		else{
 			// Print received data
@@ -64,15 +64,15 @@ void Server::listen(){
 	}
 }
 
-void Server::send(sockaddr_in clientAddress, string clientName, string payload){
-    Packet packet(0, 0, payload.length(), time(NULL), clientName, payload);
+void Server::send(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload){
+    Packet packet(0, 0, payload.length(), timestamp, clientName, payload);
 
     string aux = packet.serialize();
 
     const char* message = aux.c_str();
     ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
     if (bytesSent == -1) {
-        std::cerr << "[!] SERVER~ Error sending data to client" << std::endl;
+        print_error_msg("Error sending data to client");
     }
 }
 
@@ -88,24 +88,25 @@ void Server::process(){
 
 		
 		if (pkt.type == LOGIN) {
-			cout << "[!] SERVER~ Request for login from " << pkt.name << endl;
+			print_server_ntf(pkt.timestamp, "Request for login from", pkt.name);
 			bool in_database = database.contains(pkt.name);
 			if (!in_database) {
-				cout << "[!] SERVER~ User doesn't have an account" << endl;
-				cout << "[!] SERVER~ Creating account for " << pkt.name << endl;
+				print_server_ntf(time(NULL), "User doesn't have an account", "");
+				print_server_ntf(time(NULL), "Creating account for", pkt.name);
 				database.sign_up(pkt.name, clientAddress);
-				send(clientAddress, "SERVER", "Account created successfully");
+				send(clientAddress, time(NULL), "SERVER", "Account created successfully");
 				database.write();
 			} else {
 				auto it = database.addressMap.find(pkt.name);
 				if (it == database.addressMap.end() || it->second.size() < 2) {
-					cout << "[!] SERVER~ " << pkt.name << " logging in" << endl;
+					print_server_ntf(time(NULL), "Login from", pkt.name);
 					database.login(pkt.name, clientAddress);
-					send(clientAddress, "SERVER", "Login successful");
-					cout << "Usuario: " << pkt.name << " logando, verificando mensagens pendentes." << endl;
+					send(clientAddress, time(NULL), "SERVER", "Login successful");
+					print_server_ntf(time(NULL), "Verifying pending messages for", pkt.name);
 					sendPendingMessages(pkt.name, clientAddress);
 				} else {
-					send(clientAddress, "SERVER", "There are two other sessions already active");
+					print_server_ntf(time(NULL), "There are two other sessions already active from", pkt.name);
+					send(clientAddress, time(NULL), "SERVER", "There are two other sessions already active");
 				}
 			}
 		}
@@ -113,20 +114,20 @@ void Server::process(){
 			bool logged = database.is_logged_in_addr(pkt.name, clientAddress);
 			if(logged){
 				if(pkt.type == SEND){
-					cout << "[!] " << pkt.name << "~ " << pkt._payload << endl;
+					print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 					vector<string> followers = database.get_followers(pkt.name);
 					for(const string& follower : followers){
 						if(database.is_logged_in(follower)){
 							map<string, vector<sockaddr_in>>::iterator it;
 							it = database.addressMap.find(follower);
 							for(sockaddr_in address : it->second)
-								send(address, pkt.name, pkt._payload);
+								send(address, pkt.timestamp, pkt.name, pkt._payload);
 						}
 						else{
-							cout << "Armazenando mensagem para ser enviada mais tarde para: " << follower << endl;
+							print_server_ntf(time(NULL), "Storing messages in message queue for", follower);
 							database.storeMessageForOfflineUser(follower, pkt);
 							if (!database.messageQueue[follower].empty()){
-								cout << "Mensagem armazenada com sucesso" << endl;
+								print_server_ntf(time(NULL), "Message stored successfully", "");
 							}
 						}
 					}
@@ -138,28 +139,28 @@ void Server::process(){
 							bool successfull = database.add_follower(pkt._payload, pkt.name);
 							if(successfull){
 								database.write();
-								cout << "[!] SERVER~ " << pkt.name << " started following " << pkt._payload << endl;
-								send(clientAddress, "SERVER", "You started following " + pkt._payload);
+								print_server_follow_ntf(time(NULL), "started following", pkt.name, pkt._payload);
+								send(clientAddress, time(NULL), "SERVER", "You started following " + pkt._payload);
 							}
-							else send(clientAddress, "SERVER", "You already follow " + pkt._payload);
+							else send(clientAddress, time(NULL), "SERVER", "You already follow " + pkt._payload);
 						}
 						else{
-							send(clientAddress, "SERVER", "Can't follow self");
+							send(clientAddress, time(NULL), "SERVER", "Can't follow self");
 						}
 					}
 					else{
-						cout << "[!] SERVER~ Something went wrong" << endl;
-						send(clientAddress, "SERVER", "Something went wrong");
+						print_server_ntf(time(NULL), "Something went wrong", "");
+						send(clientAddress, time(NULL), "SERVER", "Something went wrong");
 					}
 				}
  				else if(pkt.type == EXIT){
 					bool in_database = database.contains(pkt.name);
 					if(in_database){
 						database.exit(pkt.name, clientAddress);
-						cout << "[!] SERVER~ " << pkt.name << " exited" << endl;
+						print_server_ntf(time(NULL), "Log out from", pkt.name);
 					}
 					else{
-						cout << "[!] SERVER~ Something went wrong while logging out" << endl;
+						print_server_ntf(time(NULL), "Something went wrong while logging out", "");
 					}
 				}
 			}
@@ -181,7 +182,7 @@ void Server::sendPendingMessages(const string& username, const sockaddr_in& clie
     auto& queue = database.messageQueue[username];
     while (!queue.empty()) {
         Packet messagePkt = queue.front();
-        send(clientAddress, messagePkt.name, messagePkt._payload);
+        send(clientAddress, messagePkt.timestamp, messagePkt.name, messagePkt._payload);
         queue.pop();
     }
 }

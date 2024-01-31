@@ -24,7 +24,7 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     // Create a UDP socket
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1) {
-        std::cerr << "[!] ERROR~ Error creating socket" << std::endl;
+        print_error_msg("Error creating socket");
         return -100;
     }
 
@@ -37,7 +37,7 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     bzero(&(serverAddress.sin_zero), 8);
 
     if (connect(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        std::cerr << "[!] ERROR~ Error connecting to server" << std::endl;
+        print_error_msg("Error connecting to server");
         return -200;
     }
 
@@ -60,15 +60,16 @@ void Client::send_pkt(uint16_t code, string payload){
     const char* message = aux.c_str();
     ssize_t bytesSent = send(udpSocket, message, strlen(message), 0);
     if (bytesSent == -1) {
-        std::cerr << "[!] ERROR~ Error sending data to server" << std::endl;
+        print_error_msg("Error sending data to server");
     }
 }
 
 void Client::get_input(){
     while (true){
         char input[BUFFER_SIZE];
+        
         if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
-            std::cout << "Encerrando a sessão (Ctrl+D capturado)." << std::endl;
+            print_client_msg("Terminating session (Captured ctrl+D)");
             if (globalClientPointer != nullptr) {
                 globalClientPointer->sendExit();
             }
@@ -76,7 +77,7 @@ void Client::get_input(){
         }
         string msg = input;
 
-        cout << "\033[F\033[K[#] " << this->c_info.name << "~ " << msg << "\033[E";
+        time_t timestamp = time(NULL);
 
         stringstream tokenizer(msg);
         string code;
@@ -85,17 +86,19 @@ void Client::get_input(){
         getline(tokenizer, msg);
 
         if(msg.size() > MSG_SIZE){
-            cerr << "[!] ERROR~ Message must not be longer than 128 characters" << endl;
+            print_error_msg("Message must not be longer than 128 characters");
         }
         else{
             if(code == "SEND"){
                 send_pkt(SEND, msg);
+                print_send_msg(timestamp, this->c_info.name, code, msg);
             }
             else if(code == "FOLLOW"){
                 send_pkt(FOLLOW, msg);
+                print_send_msg(timestamp, this->c_info.name, code, msg);
             }
             else{
-                cout << "[!] ERROR~ Command not valid" << endl;
+                print_error_msg("Command not valid");
             }
         }
     }
@@ -108,7 +111,7 @@ void Client::listen(){
         ssize_t bytesRead = recv(udpSocket, buffer, sizeof(buffer), 0);
 
         if (bytesRead == -1) {
-            std::cerr << "[!] ERROR~ Error receiving data" << std::endl;
+            print_error_msg("Error receiving data");
         }
         else{
             // Print received data
@@ -116,10 +119,7 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
-            if(pkt.name == "SERVER")
-                cout << "\033[1;34m[!] " << pkt.name << "~ " << pkt._payload << "          " << pkt.timestamp << "\033[0m" << endl;
-            else
-                cout << "[!] " << pkt.name << "~ " << pkt._payload << "          " << pkt.timestamp << endl;
+            print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
         }
     }
 }
@@ -135,16 +135,16 @@ void Client::call_listenThread(){
 }
 
 void Client::sendExit(){
-    Packet packet(EXIT, 0, 0, time(NULL), this->c_info.name, "Sessão encerrada");
-    std::string message = packet.serialize();
+    Packet packet(EXIT, 0, 0, time(NULL), this->c_info.name, "Terminating session");
+    string message = packet.serialize();
     ssize_t bytesSent = send(udpSocket, message.c_str(), message.length(), 0);
     if (bytesSent == -1) {
-        std::cerr << "[!] ERROR~ Erro ao enviar mensagem de encerramento para o servidor" << std::endl;
+        print_error_msg("Error sending exit message to server");
     }
 }
 
 void Client::signalHandler(int signal) {    //Teste inicial de encerrar sessao
-    std::cout << "\nEncerrando a sessão (Ctrl+C capturado)." << std::endl;
+    print_client_msg("Terminating session (Captured ctrl+C)");
     if (globalClientPointer != nullptr) {
         globalClientPointer->sendExit();
     }
