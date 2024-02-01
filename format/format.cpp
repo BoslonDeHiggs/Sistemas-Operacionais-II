@@ -58,7 +58,13 @@ void print_error_msg(string msg){
 
     cerr << YELLOW << "(" << timestamp << ") " << RED << "[¬] ERROR~ " << msg << RESET << endl;
 }
+void print_success_msg(string msg){
+    stringstream formated_msg;
 
+    string timestamp = format_time(time(NULL));
+
+    cerr << YELLOW << "(" << timestamp << ") " << GREEN << "[✓] SUCCESS~ " << msg << RESET << endl;
+}
 void save_cursor(){
     cout << SAVE;
 }

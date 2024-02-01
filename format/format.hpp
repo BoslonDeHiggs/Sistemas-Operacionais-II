@@ -45,6 +45,8 @@ void print_server_follow_ntf(time_t time, string msg, string name_1, string name
 
 void print_error_msg(string msg);
 
+void print_success_msg(string msg);
+
 void save_cursor();
 
 void restore_cursor();
