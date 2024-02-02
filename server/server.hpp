@@ -53,4 +53,16 @@ private:
     void listen();
 
     void process();
+
+    void handleLogin(const Packet& pkt, const sockaddr_in& clientAddress);
+
+    void handleNewAccount(const Packet& pkt, const sockaddr_in& clientAddress);
+
+    void handleExistingAccount(const Packet& pkt, const sockaddr_in& clientAddress);
+
+    void handleSend(const Packet& pkt, const sockaddr_in& clientAddress);
+
+    void handleFollow(const Packet& pkt, const sockaddr_in& clientAddress);
+
+    void handleExit(const Packet& pkt, const sockaddr_in& clientAddress);
 };

@@ -51,7 +51,9 @@ void Client::login(){
 void Client::follow(string username){
     Client::send_pkt(FOLLOW, username);
 }
-
+void Client::send_message(string msg){
+    Client::send_pkt(SEND, msg);
+}
 void Client::send_pkt(uint16_t code, string payload){
     Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
 

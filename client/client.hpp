@@ -26,6 +26,8 @@ public:
 
     void follow(string username);
 
+    void send_message(string msg);
+
     void call_sendThread();
 
     void call_listenThread();
