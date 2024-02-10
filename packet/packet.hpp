@@ -11,10 +11,15 @@
 #define LOGIN 200
 #define FOLLOW 300
 #define EXIT 400
+#define ELECTION_START 500
+#define ELECTION_ANSWER 600
+#define ELECTION_COORDINATOR 700
+#define LINK_REPLICA 900 // will link the new replica to the primary replica (just add to primary map of replicas)
+#define UPDATE_REPLICA 1000 // the replica which receives this will be updated with some data in the payload
 
 using namespace std;
 
-class Packet{
+class  Packet{
     public:
         uint16_t type; //Tipo do pacote (p.ex. DATA | CMD)
         uint16_t seqn; //Número de sequência
