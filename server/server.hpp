@@ -41,6 +41,8 @@ public:
 
     void sendPendingMessages(const string& username, const sockaddr_in& clientAddress);
 
+    int get_socket();
+
 private:
 	int udpSocket;
     sockaddr_in serverAddress;

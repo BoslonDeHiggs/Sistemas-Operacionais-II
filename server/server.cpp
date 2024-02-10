@@ -209,3 +209,7 @@ void Server::sendPendingMessages(const string& username, const sockaddr_in& clie
         queue.pop();
     }
 }
+
+int Server::get_socket(){
+	return this->udpSocket;
+}
