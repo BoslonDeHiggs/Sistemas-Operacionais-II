@@ -1,2 +1,5 @@
 TODO: Sarlvar contas do cliente
 TODO: Mandar mensagem do servidor para o cliente
+TODO: vai ter uma thread processando mensagens relacionadas a eleicao, concorrentemente com a thread que roda start_election()
+      essa funcao pode ser uma extensao do 'process' do Server? Vai sobrecarregar mais -> recebe mesnagem de cliente e de outros RM
+      mas eh a implementacao mais simples
