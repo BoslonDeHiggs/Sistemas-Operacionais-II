@@ -11,7 +11,8 @@ Server::Server(uint16_t port){
     multicastAddr.sin_port = htons(port);
 	setup_multicast(port);
 	std::thread(&Server::listen_multicast, this).detach();
-	send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
+	send_multicast_initial_message();
+	//send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
 }
 
 int Server::open_udp_connection(uint16_t port){
@@ -291,7 +292,7 @@ void Server::setup_multicast(uint16_t port) {
     memset(&multicastAddr, 0, sizeof(multicastAddr));
     multicastAddr.sin_family = AF_INET;
     multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250"); // Exemplo de endereco multicast
-    multicastAddr.sin_port = htons(port); // Exemplo de porta multicast
+    multicastAddr.sin_port = htons(port);
 
     // Associacao do socket ao endereco multicast
     if (bind(multicastSocket, (struct sockaddr*)&multicastAddr, sizeof(multicastAddr)) < 0) {
@@ -322,6 +323,22 @@ void Server::send_multicast(const std::string& message) {
     }
 }
 
+void Server::send_multicast_initial_message() {
+    auto timestamp = time(NULL); // Obtem o timestamp atual
+
+	//char serverIP[INET_ADDRSTRLEN];
+    //inet_ntop(AF_INET, &(serverAddress.sin_addr), serverIP, INET_ADDRSTRLEN);
+
+	//auto serverPort = ntohs(serverAddress.sin_port);
+    
+	//std::string message = "Servidor iniciado; IP: " + std::string(serverIP) + "; Porta: " + std::to_string(serverPort) + "; ID: " + std::to_string(timestamp);
+    //std::string message = "Servidor iniciado - ID: " + std::to_string(timestamp);
+	std::string port = std::to_string(ntohs(serverAddress.sin_port)); // Porta em que o servidor esta ouvindo
+
+    std::string message = "Servidor iniciado - Porta: " + port + "; ID: " + std::to_string(timestamp);
+    send_multicast(message);
+}
+
 void Server::listen_multicast() {
     // Buffer para receber mensagens multicast
     char buffer[1024];
@@ -338,7 +355,7 @@ void Server::listen_multicast() {
         // Terminacao nula dos dados recebidos e processamento da mensagem
         buffer[bytesRead] = '\0';
         std::string receivedMessage(buffer);
-        std::cout << "Received multicast message: " << receivedMessage << std::endl;
+        std::cout << "Received multicast message - IP: " << inet_ntoa(multicastAddr.sin_addr) << " - PORT: " << ntohs(multicastAddr.sin_port) << " " << receivedMessage << std::endl;
 
         // Aqui voce pode analisar a mensagem recebida e responder se necessario
         // Este e o lugar para implementar a logica de resposta ao multicast recebido

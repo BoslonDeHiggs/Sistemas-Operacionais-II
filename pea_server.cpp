@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#define MULTICAST_PORT 5000
+#define MULTICAST_PORT 20000
 
 int main(int argc, char* argv[]){
 

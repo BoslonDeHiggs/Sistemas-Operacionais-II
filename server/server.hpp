@@ -48,6 +48,7 @@ public:
     //Tentativa de multicast
     void setup_multicast(uint16_t port);
     void send_multicast(const std::string& message);
+    void send_multicast_initial_message();
     void listen_multicast();
     int multicastSocket;
     struct sockaddr_in multicastAddr;

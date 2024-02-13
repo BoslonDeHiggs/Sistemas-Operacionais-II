@@ -13,110 +13,33 @@ Client* globalClientPointer = nullptr;
 
 Client::Client(string input){
     this->c_info.name = "@" + input;
-    init_frontend();
 
     //globalUdpSocket = udpSocket;
     globalClientPointer = this;
     std::signal(SIGINT, Client::signalHandler); //Teste inicial para encerrar sessao
 }
 
+void Client::init(){
+    frontend.init_multicast();
+    frontend.call_listenMulticastThread();
+    frontend.call_receiveFromServerThread();
+    frontend.call_sendToServerThread();
+    call_listenThread();
+    call_sendThread();
+}
+
 Client::~Client() {
     globalClientPointer = nullptr;
 }
 
-void Client::init_frontend(){
-    // Create UDP socket
-    if ((multicastSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        perror("socket");
-        exit(1);
-    }
-
-    // Set up my address
-    memset(&multicastAddress, 0, sizeof(multicastAddress));
-    multicastAddress.sin_family = AF_INET;
-    multicastAddress.sin_port = htons(MULTICAST_PORT);
-    multicastAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    // Bind to any address and specific port
-    if (bind(multicastSocket, (struct sockaddr *)&multicastAddress, sizeof(multicastAddress)) == -1) {
-        perror("bind");
-        exit(1);
-    }
-
-    // Join multicast group
-    struct ip_mreq mreq;
-    mreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDR);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-    if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
-        perror("setsockopt");
-        exit(1);
-    }
-
-    
-}
-
-void Client::listen_multicast(){
-    struct sockaddr_in their_addr;
-    socklen_t addr_len;
-    char buffer[M_BUFFER];
-    int numbytes;
-
-    addr_len = sizeof(their_addr);
-    if ((numbytes = recvfrom(multicastSocket, buffer, M_BUFFER - 1, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) {
-        perror("recvfrom");
-        exit(1);
-    }
-
-    buffer[numbytes] = '\0';
-    printf("Received packet from %s:%d\nData: %s\n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port), buffer);
-}
-
-int Client::connect_to_udp_server(const char *ip, uint16_t port){
-    // Create a UDP socket
-    udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udpSocket == -1) {
-        print_error_msg("Error creating socket");
-        return -100;
-    }
-
-    // Set up the server address struct
-    struct hostent *server = gethostbyname(ip);
-    std::memset(&serverAddress, 0, sizeof(serverAddress));
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr = *((struct in_addr *)server->h_addr); // Server IP address (loopback in this example)
-    serverAddress.sin_port = htons(port);
-    bzero(&(serverAddress.sin_zero), 8);
-
-    if (connect(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        print_error_msg("Error connecting to server");
-        return -200;
-    }
-
-    return 0;
-}
-
 void Client::login(){
-    Client::send_pkt(LOGIN, "Request for login");
-}
+    string login = "Request for login";
 
-void Client::follow(string username){
-    Client::send_pkt(FOLLOW, username);
-}
+    Packet packet(LOGIN, 0, login.length(), time(NULL), this->c_info.name, login);
 
-void Client::send_message(string msg){
-    Client::send_pkt(SEND, msg);
-}
-
-void Client::send_pkt(uint16_t code, string payload){
-    Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
-
-    string aux = packet.serialize();
-
-    const char* message = aux.c_str();
-    ssize_t bytesSent = send(udpSocket, message, strlen(message), 0);
-    if (bytesSent == -1) {
-        print_error_msg("Error sending data to server");
-    }
+    unique_lock<mutex> lock_queue_send(frontend.mtx_queue_send);
+        frontend.pkt_queue_send.push(packet);
+    frontend.cv_queue_send.notify_one();
 }
 
 void Client::get_input(){
@@ -145,11 +68,21 @@ void Client::get_input(){
         }
         else{
             if(code == "SEND"){
-                send_pkt(SEND, msg);
+                Packet packet(SEND, 0, msg.length(), timestamp, this->c_info.name, msg);
+
+                unique_lock<mutex> lock_queue_send(frontend.mtx_queue_send);
+                    frontend.pkt_queue_send.push(packet);
+                frontend.cv_queue_send.notify_one();
+
                 print_send_msg(timestamp, this->c_info.name, code, msg);
             }
             else if(code == "FOLLOW"){
-                send_pkt(FOLLOW, msg);
+                Packet packet(FOLLOW, 0, msg.length(), timestamp, this->c_info.name, msg);
+
+                unique_lock<mutex> lock_queue_send(frontend.mtx_queue_send);
+                    frontend.pkt_queue_send.push(packet);
+                frontend.cv_queue_send.notify_one();
+
                 print_send_msg(timestamp, this->c_info.name, code, msg);
             }
             else{
@@ -161,27 +94,13 @@ void Client::get_input(){
 
 void Client::listen(){
     while (true){
-        // Receive data
-        char buffer[1024];
-        ssize_t bytesRead = recv(udpSocket, buffer, sizeof(buffer), 0);
+        unique_lock<mutex> lock_queue_receive(frontend.mtx_queue_receive);
+			frontend.cv_queue_receive.wait(lock_queue_receive, [this]() { return !frontend.pkt_queue_receive.empty(); });
+		Packet pkt = frontend.pkt_queue_receive.front();
+		frontend.pkt_queue_receive.pop();
 
-        if (bytesRead == -1) {
-            print_error_msg("Error receiving data");
-        }
-        else{
-            // Print received data
-            buffer[bytesRead] = '\0'; // Null-terminate the received data
-
-            Packet pkt = Packet::deserialize(buffer);
-
-            print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
-        }
+        print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
     }
-}
-
-void Client::call_listenMulticastThread(){
-    thread listenMulticastThread(&Client::listen_multicast, this);
-    listenMulticastThread.join();
 }
 
 void Client::call_listenThread(){
@@ -196,11 +115,10 @@ void Client::call_sendThread(){
 
 void Client::sendExit(){
     Packet packet(EXIT, 0, 0, time(NULL), this->c_info.name, "Terminating session");
-    string message = packet.serialize();
-    ssize_t bytesSent = send(udpSocket, message.c_str(), message.length(), 0);
-    if (bytesSent == -1) {
-        print_error_msg("Error sending exit message to server");
-    }
+
+    unique_lock<mutex> lock_queue_send(frontend.mtx_queue_send);
+        frontend.pkt_queue_send.push(packet);
+    frontend.cv_queue_send.notify_one();
 }
 
 void Client::signalHandler(int signal) {    //Teste inicial de encerrar sessao

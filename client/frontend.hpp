@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../packet/packet.hpp"
+#include "../format/format.hpp"
 #include <queue>
 #include <thread>
 #include <mutex>
@@ -23,14 +24,30 @@ class FrontEnd{
 public:
     FrontEnd();
 
-    queue<Packet> pkt_queue;
-    queue<sockaddr_in> addr_queue;
+    queue<Packet> pkt_queue_send, pkt_queue_receive;
+    mutex mtx_queue_send, mtx_queue_receive;
+    condition_variable cv_queue_send, cv_queue_receive;
 
-    void call_listenThread();
+    void call_listenMulticastThread();
+
+    void call_receiveFromServerThread();
+
+    void call_sendToServerThread();
+
+    int connect_to_udp_server(const char *ip, uint16_t port);
+
+    void init_multicast();
 
 private:
-    int sockfd;
-    struct sockaddr_in addr;
+    int udpSocket, multicastSocket;
+    sockaddr_in myAddr, serverAddr;
+    queue<sockaddr_in> addr_queue;
 
     void listen_multicast();
+
+    void send_to_server();
+
+    void receive_from_server();
+
+    void send_pkt(Packet pkt);
 };

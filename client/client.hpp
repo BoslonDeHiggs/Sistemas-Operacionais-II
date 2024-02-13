@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../format/format.hpp"
+#include "frontend.hpp"
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -17,9 +18,9 @@ using namespace std;
 
 class Client{
 public:
+    FrontEnd frontend;
+
     Client(string input);
-    
-    int connect_to_udp_server(const char *ip, uint16_t port);
 
     void login();
 
@@ -33,6 +34,8 @@ public:
 
     void sendExit();
 
+    void init();
+
     ~Client();
 
     static void signalHandler(int signal); //Teste incial de encerrar sessao
@@ -42,18 +45,8 @@ private:
         string name;
     }c_info;
 
-    int multicastSocket;
     int udpSocket;
     sockaddr_in serverAddress;
-    sockaddr_in multicastAddress;
-
-    void init_frontend();
-
-    void listen_multicast();
-
-    void call_listenMulticastThread();
-
-    void send_pkt(uint16_t code, string msg_in);
 
     void get_input();
 
