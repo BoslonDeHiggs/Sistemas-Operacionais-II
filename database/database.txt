@@ -1,8 +1,1 @@
-@Bolson:@bruna;@Laura;
-@Carla:@Paulo;
-@Eduardo:@Paulo;
-@Laura:@Bolson;
-@Paulo:@Carla;@Eduardo;
-@bruna:@menin;@Bolson;
-@menin:@paolo;@bruna;
-@paolo:@menin;
+@paolo:

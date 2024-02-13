@@ -11,6 +11,7 @@
 #include <csignal>
 
 #define BUFFER_SIZE 256
+#define M_BUFFER 256
 
 using namespace std;
 
@@ -21,8 +22,6 @@ public:
     int connect_to_udp_server(const char *ip, uint16_t port);
 
     void login();
-
-    //static void exit(int signal); //Teste inicial de encerramento de sessao
 
     void follow(string username);
 
@@ -38,15 +37,21 @@ public:
 
     static void signalHandler(int signal); //Teste incial de encerrar sessao
 
-    //static bool encerrarSessao;
-
 private:
     struct client{
         string name;
     }c_info;
 
+    int multicastSocket;
     int udpSocket;
     sockaddr_in serverAddress;
+    sockaddr_in multicastAddress;
+
+    void init_frontend();
+
+    void listen_multicast();
+
+    void call_listenMulticastThread();
 
     void send_pkt(uint16_t code, string msg_in);
 

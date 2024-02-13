@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>/* Replica entrypoint */
+
+using namespace std;
+
 int main(int argc, char **argv)
 {
     // Parse command line input

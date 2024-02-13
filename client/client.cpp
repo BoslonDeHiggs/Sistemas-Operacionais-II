@@ -2,6 +2,9 @@
 #include "../packet/packet.hpp"
 #include <netdb.h>
 
+#define MULTICAST_ADDR "239.255.255.200"
+#define MULTICAST_PORT 8888
+
 using namespace std;
 
 //int globalUdpSocket; //Variavel global para armazenar udpSocket
@@ -10,6 +13,7 @@ Client* globalClientPointer = nullptr;
 
 Client::Client(string input){
     this->c_info.name = "@" + input;
+    init_frontend();
 
     //globalUdpSocket = udpSocket;
     globalClientPointer = this;
@@ -18,6 +22,53 @@ Client::Client(string input){
 
 Client::~Client() {
     globalClientPointer = nullptr;
+}
+
+void Client::init_frontend(){
+    // Create UDP socket
+    if ((multicastSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+        perror("socket");
+        exit(1);
+    }
+
+    // Set up my address
+    memset(&multicastAddress, 0, sizeof(multicastAddress));
+    multicastAddress.sin_family = AF_INET;
+    multicastAddress.sin_port = htons(MULTICAST_PORT);
+    multicastAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    // Bind to any address and specific port
+    if (bind(multicastSocket, (struct sockaddr *)&multicastAddress, sizeof(multicastAddress)) == -1) {
+        perror("bind");
+        exit(1);
+    }
+
+    // Join multicast group
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDR);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
+        perror("setsockopt");
+        exit(1);
+    }
+
+    
+}
+
+void Client::listen_multicast(){
+    struct sockaddr_in their_addr;
+    socklen_t addr_len;
+    char buffer[M_BUFFER];
+    int numbytes;
+
+    addr_len = sizeof(their_addr);
+    if ((numbytes = recvfrom(multicastSocket, buffer, M_BUFFER - 1, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) {
+        perror("recvfrom");
+        exit(1);
+    }
+
+    buffer[numbytes] = '\0';
+    printf("Received packet from %s:%d\nData: %s\n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port), buffer);
 }
 
 int Client::connect_to_udp_server(const char *ip, uint16_t port){
@@ -51,9 +102,11 @@ void Client::login(){
 void Client::follow(string username){
     Client::send_pkt(FOLLOW, username);
 }
+
 void Client::send_message(string msg){
     Client::send_pkt(SEND, msg);
 }
+
 void Client::send_pkt(uint16_t code, string payload){
     Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
 
@@ -126,14 +179,19 @@ void Client::listen(){
     }
 }
 
-void Client::call_sendThread(){
-    thread sendThread(&Client::get_input, this);
-    sendThread.join();
+void Client::call_listenMulticastThread(){
+    thread listenMulticastThread(&Client::listen_multicast, this);
+    listenMulticastThread.join();
 }
 
 void Client::call_listenThread(){
     thread listenThread(&Client::listen, this);
     listenThread.detach();
+}
+
+void Client::call_sendThread(){
+    thread sendThread(&Client::get_input, this);
+    sendThread.join();
 }
 
 void Client::sendExit(){

@@ -1,4 +1,4 @@
-C_SOURCES = pea.cpp client/client.cpp packet/packet.cpp format/format.cpp
+C_SOURCES = pea.cpp client/client.cpp client/frontend.cpp packet/packet.cpp format/format.cpp
 S_SOURCES = pea_server.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp
 T_SOURCES =  client/client.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp tests/file_test.cpp
 FLAGS = -std=c++20 -Wall -g

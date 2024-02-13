@@ -3,14 +3,18 @@
 
 #define ERROR_ID -1
 #define ELECTION_TIMEOUT 2
+
 class ReplicaManager: public Server{
     public:
         ReplicaManager(uint16_t replica_port, const char* leader_ip, uint16_t leader_port);
+        
         void start_election();
 
         void handle_election();
         
         void become_leader();
+
+        void process_manager();
     private:
         int id;
         uint16_t port;

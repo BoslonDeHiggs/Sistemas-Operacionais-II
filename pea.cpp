@@ -15,8 +15,8 @@ int main(int argc, char* argv[]){
         print_error_msg("Name must be between 4 and 20 characters long");
         return 0;
     }
-    else if(name.find("@") != std::string::npos || name.find(":") != std::string::npos || name.find(",") != std::string::npos){
-        print_error_msg("Name must not contain this characters: \'@\' \':\' \',\'");
+    else if(name.find("@") != std::string::npos || name.find(":") != std::string::npos || name.find(";") != std::string::npos){
+        print_error_msg("Name must not contain this characters: \'@\' \':\' \';\'");
         return 0;
     }
 
@@ -24,8 +24,6 @@ int main(int argc, char* argv[]){
     //globalSession = &client;
     client.connect_to_udp_server(argv[2], PORT);
     client.login();
-
-    /* signal(SIGINT, Client::exit); */
 
     client.call_listenThread();
     client.call_sendThread();

@@ -88,7 +88,23 @@ void ReplicaManager::start_election(){
     this->election_started = false;
 }
 
-
 void ReplicaManager::become_leader(){
+
+    this->leader_id = this->id;
+    print_server_ntf(time(NULL), "Virando o lider id:", to_string(this->id));
+
+    string replica_name = to_string(this->id);
+    string empty;
+    //Enviar mensagem para outras replicas
+    for (auto i = replicas.begin(); i != replicas.end(); ++i)
+    if(i->first != this->id)
+    {
+            CommunicationManager::send_packet(this->get_socket(),i->second, ELECTION_COORDINATOR, time(NULL), replica_name, empty);
+    }
+    
+    print_server_ntf(time(NULL), "Lider pronto: ", to_string(this->id));
+}
+
+void ReplicaManager::process_manager(){
 
 }

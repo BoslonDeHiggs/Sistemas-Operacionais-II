@@ -19,7 +19,7 @@
 
 using namespace std;
 
-class  Packet{
+class Packet{
     public:
         uint16_t type; //Tipo do pacote (p.ex. DATA | CMD)
         uint16_t seqn; //Número de sequência
