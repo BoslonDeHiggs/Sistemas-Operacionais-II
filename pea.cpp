@@ -23,8 +23,8 @@ int main(int argc, char* argv[]){
 
     Client client(name);
     client.frontend.connect_to_udp_server(ip, port);
-    client.init();
     client.login();
+    client.init();
 
     return 0;
 }

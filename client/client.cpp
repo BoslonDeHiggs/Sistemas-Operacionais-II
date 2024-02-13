@@ -2,9 +2,6 @@
 #include "../packet/packet.hpp"
 #include <netdb.h>
 
-#define MULTICAST_ADDR "239.255.255.200"
-#define MULTICAST_PORT 8888
-
 using namespace std;
 
 //int globalUdpSocket; //Variavel global para armazenar udpSocket

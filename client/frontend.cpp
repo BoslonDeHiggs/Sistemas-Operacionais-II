@@ -68,6 +68,8 @@ void FrontEnd::receive_from_server(){
 
             Packet pkt = Packet::deserialize(buffer);
 
+            print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+
             unique_lock<mutex> lock_queue_receive(mtx_queue_receive);
 				pkt_queue_receive.push(pkt);
 			cv_queue_receive.notify_one();
