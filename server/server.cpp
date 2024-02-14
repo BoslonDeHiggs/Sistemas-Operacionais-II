@@ -6,13 +6,14 @@
 
 using namespace std;
 
-Server::Server(){
+Server::Server(uint16_t port){
 	//Todo o codigo destes colchetes faz parte do teste para multicast
 	multicastAddr.sin_family = AF_INET;
     multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250");
     multicastAddr.sin_port = htons(MULTICAST_PORT);
 	setup_multicast(MULTICAST_PORT);
 	std::thread(&Server::listen_multicast, this).detach();
+	open_udp_connection(port);
 	send_multicast_initial_message();
 	//send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
 }
@@ -169,7 +170,7 @@ void Server::handleExistingAccount(const Packet& pkt, const sockaddr_in& clientA
         print_server_ntf(time(NULL), "Verifying pending messages for", pkt.name);
         sendPendingMessages(pkt.name, clientAddress);
     } else {
-        print_server_ntf(time(NULL), "There are two other sessions already active from", pkt.name);
+        print_server_ntf(time(NULL), "There are two other session172s already active from", pkt.name);
 
 		Packet packet(0, 0, 0, time(NULL), "SERVER", "There are two other sessions already active");
 		pushSendQueue(packet, clientAddress);

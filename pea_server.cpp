@@ -16,9 +16,8 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    Server server;
+    Server server((uint16_t)port);
     server.init_database();
-    server.open_udp_connection((uint16_t)port);
     server.call_listenThread();
     server.call_processThread();
     server.call_sendThread();

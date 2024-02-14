@@ -27,7 +27,7 @@ typedef struct pkt_addr{
 
 class Server{
 public:
-	Server();
+	Server(uint16_t port);
 
     int open_udp_connection(uint16_t port);
 
