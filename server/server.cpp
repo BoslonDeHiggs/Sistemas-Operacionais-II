@@ -2,14 +2,16 @@
 #include "server.hpp"
 #include "../packet/packet.hpp"
 
+#define MULTICAST_PORT 20000
+
 using namespace std;
 
-Server::Server(uint16_t port){
+Server::Server(){
 	//Todo o codigo destes colchetes faz parte do teste para multicast
 	multicastAddr.sin_family = AF_INET;
     multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250");
-    multicastAddr.sin_port = htons(port);
-	setup_multicast(port);
+    multicastAddr.sin_port = htons(MULTICAST_PORT);
+	setup_multicast(MULTICAST_PORT);
 	std::thread(&Server::listen_multicast, this).detach();
 	send_multicast_initial_message();
 	//send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
@@ -27,7 +29,9 @@ int Server::open_udp_connection(uint16_t port){
 	std::memset(&serverAddress, 0, sizeof(serverAddress));
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_addr.s_addr = INADDR_ANY; // Use any available network interface
+	//sprintf(str, "%u", port); //debug
 	serverAddress.sin_port = htons(port);
+	//sprintf(str1, "%u", port); //debug
 	bzero(&(serverAddress.sin_zero), 8);
 
 	// Bind the socket to the address and port

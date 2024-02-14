@@ -3,8 +3,6 @@
 #include <iostream>
 #include <cstdlib>
 
-#define MULTICAST_PORT 20000
-
 int main(int argc, char* argv[]){
 
     if (argc != 2) {
@@ -18,7 +16,7 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    Server server(MULTICAST_PORT);
+    Server server;
     server.init_database();
     server.open_udp_connection((uint16_t)port);
     server.call_listenThread();

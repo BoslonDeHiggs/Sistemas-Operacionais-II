@@ -40,8 +40,10 @@ public:
 
 private:
     int udpSocket, multicastSocket;
-    sockaddr_in myAddr, serverAddr;
+    sockaddr_in myAddr, multicastAddr, serverAddr;
     queue<sockaddr_in> addr_queue;
+
+    void send_multicast(Packet pkt);
 
     void listen_multicast();
 

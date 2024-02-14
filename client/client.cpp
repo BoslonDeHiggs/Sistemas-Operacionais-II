@@ -17,6 +17,7 @@ Client::Client(string input){
 }
 
 void Client::init(){
+    login();
     frontend.init_multicast();
     frontend.call_listenMulticastThread();
     frontend.call_receiveFromServerThread();

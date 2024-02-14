@@ -16,6 +16,7 @@
 #define ELECTION_COORDINATOR 700
 #define LINK_REPLICA 900 // will link the new replica to the primary replica (just add to primary map of replicas)
 #define UPDATE_REPLICA 1000 // the replica which receives this will be updated with some data in the payload
+#define SERVICE_DISCOVERY 1100
 
 using namespace std;
 

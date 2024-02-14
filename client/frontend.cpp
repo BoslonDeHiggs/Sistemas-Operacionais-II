@@ -2,28 +2,28 @@
 #include <netdb.h>
 
 #define MULTICAST_ADDR "239.255.255.200"
-#define PORT 8888
+#define MULTICAST_PORT 40000
 
 FrontEnd::FrontEnd(){}
 
 void FrontEnd::init_multicast(){
-    // Create UDP socket
     if ((multicastSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
         perror("socket");
-        exit(1);
+        exit(-1);
     }
 
-    // Set up my address
-    memset(&myAddr, 0, sizeof(myAddr));
-    myAddr.sin_family = AF_INET;
-    myAddr.sin_port = htons(PORT);
-    myAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    // Bind to any address and specific port
-    if (bind(multicastSocket, (struct sockaddr *)&myAddr, sizeof(myAddr)) == -1) {
-        perror("bind");
-        exit(1);
+    // Allow multiple sockets to use the same address and port
+    int optval = 1;
+    if (setsockopt(multicastSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        perror("setsockopt");
+        close(multicastSocket);
+        exit(-1);
     }
+
+    // Set up multicast address structure
+    multicastAddr.sin_family = AF_INET;
+    multicastAddr.sin_addr.s_addr = inet_addr(MULTICAST_ADDR);
+    multicastAddr.sin_port = htons(MULTICAST_PORT);
 
     // Join multicast group
     struct ip_mreq mreq;
@@ -31,7 +31,34 @@ void FrontEnd::init_multicast(){
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
         perror("setsockopt");
-        exit(1);
+        close(multicastSocket);
+        exit(-1);
+    }
+
+    // Bind socket to address and port
+    if (bind(multicastSocket, (struct sockaddr *)&multicastAddr, sizeof(multicastAddr)) < 0) {
+        perror("bind");
+        close(multicastSocket);
+        exit(-1);
+    }
+
+    stringstream message;
+    message << inet_ntoa(myAddr.sin_addr) << " " << ntohs(myAddr.sin_port);
+    string payload = message.str();
+    Packet pkt(SERVICE_DISCOVERY, 0, payload.length(), time(NULL), "CLIENT", payload);
+
+    send_multicast(pkt);
+}
+
+void FrontEnd::send_multicast(Packet pkt){
+    // Send the message
+    string aux = pkt.serialize();
+
+    const char* message = aux.c_str();
+
+    ssize_t bytes_sent = sendto(multicastSocket, message, strlen(message), 0, (struct sockaddr *)&multicastAddr, sizeof(multicastAddr));
+    if (bytes_sent < 0) {
+        perror("sendto");
     }
 }
 
@@ -49,7 +76,8 @@ void FrontEnd::listen_multicast(){
         }
 
         buffer[numbytes] = '\0';
-        printf("Received packet from %s:%d\nData: %s\n", inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port), buffer);
+        
+        cout << inet_ntoa(their_addr.sin_addr) << " " << ntohs(their_addr.sin_port);
     }
 }
 
@@ -67,8 +95,6 @@ void FrontEnd::receive_from_server(){
             buffer[bytesRead] = '\0'; // Null-terminate the received data
 
             Packet pkt = Packet::deserialize(buffer);
-
-            print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 
             unique_lock<mutex> lock_queue_receive(mtx_queue_receive);
 				pkt_queue_receive.push(pkt);
