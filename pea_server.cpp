@@ -20,6 +20,7 @@ int main(int argc, char* argv[]){
     server.init_database();
     server.call_listenThread();
     server.call_processThread();
+    server.call_heartbeatThread();
     server.call_sendThread();
 
     return 0;

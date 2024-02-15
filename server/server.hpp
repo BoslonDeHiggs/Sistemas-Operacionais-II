@@ -31,6 +31,8 @@ public:
 
     int open_udp_connection(uint16_t port);
 
+    time_t timestamp;
+
     void init_database();
 
     void send_pkt(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload);
@@ -49,6 +51,8 @@ public:
     void setup_multicast(uint16_t port);
     void send_multicast(const std::string& message);
     void send_multicast_initial_message();
+    void send_heartbeat();
+    void call_heartbeatThread();
     void listen_multicast();
     int multicastSocket;
     struct sockaddr_in multicastAddr;

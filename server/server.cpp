@@ -13,8 +13,11 @@ Server::Server(uint16_t port){
     multicastAddr.sin_port = htons(MULTICAST_PORT);
 	setup_multicast(MULTICAST_PORT);
 	std::thread(&Server::listen_multicast, this).detach();
+	//std::thread(&Server::send_heartbeat, this).detach();
 	open_udp_connection(port);
 	send_multicast_initial_message();
+	//std::thread(&Server::send_heartbeat, this).join();
+	//send_heartbeat();
 	//send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
 }
 
@@ -269,9 +272,14 @@ void Server::call_processThread(){
 	processThread.detach();
 }
 
+void Server::call_heartbeatThread(){
+	thread heartbeatThread(&Server::send_heartbeat, this);
+	heartbeatThread.join();
+}
+
 void Server::call_sendThread(){
 	thread sendThread(&Server::send, this);
-	sendThread.join();
+	sendThread.detach();
 }
 
 int Server::get_socket(){
@@ -329,7 +337,7 @@ void Server::send_multicast(const std::string& message) {
 }
 
 void Server::send_multicast_initial_message() {
-    auto timestamp = time(NULL); // Obtem o timestamp atual
+    this->timestamp = time(NULL); // Obtem o timestamp atual
 
 	//char serverIP[INET_ADDRSTRLEN];
     //inet_ntop(AF_INET, &(serverAddress.sin_addr), serverIP, INET_ADDRSTRLEN);
@@ -346,8 +354,8 @@ void Server::send_multicast_initial_message() {
 
 void Server::listen_multicast() {
     // Buffer para receber mensagens multicast
-    char buffer[1024];
     while (true) {
+		char buffer[1024];
         // Escuta por mensagens multicast
         socklen_t addrlen = sizeof(multicastAddr);
         int bytesRead = recvfrom(multicastSocket, buffer, sizeof(buffer), 0,
@@ -362,7 +370,20 @@ void Server::listen_multicast() {
         std::string receivedMessage(buffer);
         std::cout << "Received multicast message - IP: " << inet_ntoa(multicastAddr.sin_addr) << " - PORT: " << ntohs(multicastAddr.sin_port) << " " << receivedMessage << std::endl;
 
+		
+
         // Aqui voce pode analisar a mensagem recebida e responder se necessario
         // Este e o lugar para implementar a logica de resposta ao multicast recebido
+    }
+}
+
+void Server::send_heartbeat() {
+    while(true) {
+		std::string id = to_string(timestamp);
+		//cout << "Sending heartbeats from " << id << endl;
+        send_multicast("heartbeats ");
+
+        // Aguarde um intervalo de tempo antes de enviar o próximo heartbeat
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }
