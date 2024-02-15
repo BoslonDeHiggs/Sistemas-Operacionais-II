@@ -328,7 +328,7 @@ void Server::setup_multicast(uint16_t port) {
     struct ip_mreq mreq;
     mreq.imr_multiaddr.s_addr = inet_addr("239.255.255.250");
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-    if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+    if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mreq, sizeof(mreq)) < 0) {
         perror("Multicast group join failed");
         close(multicastSocket);
         exit(EXIT_FAILURE);
@@ -383,10 +383,17 @@ void Server::listen_multicast() {
         std::string receivedMessage(buffer);
         std::cout << "Received multicast message - IP: " << inet_ntoa(multicastAddr.sin_addr) << " - PORT: " << ntohs(multicastAddr.sin_port) << " " << receivedMessage << std::endl;
 
-		
-
         // Aqui voce pode analisar a mensagem recebida e responder se necessario
         // Este e o lugar para implementar a logica de resposta ao multicast recebido
+
+		
+        // Aqui você pode verificar se a mensagem recebida é uma heartbeat
+        // por exemplo, verificar se ela contém a palavra "heartbeats"
+
+        std::string server_id = extract_server_id(receivedMessage);
+
+        // Atualiza o timestamp da última heartbeat recebida para este servidor
+        last_heartbeat_times[server_id] = std::chrono::steady_clock::now();
     }
 }
 
@@ -401,4 +408,42 @@ void Server::send_heartbeat() {
         // Aguarde um intervalo de tempo antes de enviar o proximo heartbeat
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
+}
+
+std::string Server::extract_server_id(const std::string& heartbeat_message) {
+    // Implemente a lógica para extrair o ID do servidor da mensagem de heartbeat
+    // Por exemplo, você pode analisar a mensagem para obter o ID.
+    // Neste exemplo, estou assumindo que o ID está antes da palavra "heartbeats".
+    size_t pos = heartbeat_message.find("heartbeats");
+    if (pos != std::string::npos) {
+        return heartbeat_message.substr(0, pos);
+    }
+    return "";
+}
+
+void Server::check_heartbeats() {
+    while (true) {
+        auto current_time = std::chrono::steady_clock::now();
+
+        for (auto it = last_heartbeat_times.begin(); it != last_heartbeat_times.end();) {
+            const std::string& server_id = it->first;
+            const auto& last_heartbeat_time = it->second;
+
+            auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - last_heartbeat_time);
+
+            if (elapsed_time.count() > 10) {
+                std::cout << "Server " << server_id << " is presumed dead. Removing from the list." << std::endl;
+                it = last_heartbeat_times.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+// No seu construtor ou em alguma função de inicialização
+void Server::start_heartbeat_threads() {
+    std::thread(&Server::check_heartbeats, this).detach();
 }

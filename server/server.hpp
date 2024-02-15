@@ -53,6 +53,9 @@ public:
     void send_multicast(const std::string& message);
     void send_multicast_initial_message();
     void send_heartbeat();
+    std::string extract_server_id(const std::string &heartbeat_message);
+    void check_heartbeats();
+    void start_heartbeat_threads();
     void call_heartbeatThread();
     void listen_multicast();
     int multicastSocket;
@@ -66,6 +69,8 @@ private:
 
     mutex mtx_listen_process, mtx_process_send, mtx_multicast;
     condition_variable cv_listen_process, cv_process_send;
+
+    std::unordered_map<std::string, std::chrono::steady_clock::time_point> last_heartbeat_times;
 
     void listen();
 
