@@ -20,6 +20,9 @@ int main(int argc, char* argv[]){
     server.init_database();
     server.call_listenThread();
     server.call_processThread();
+    server.call_listenThread_multicast();
+	server.send_multicast_initial_message();
+    server.call_processThread_multicast();
     server.call_sendThread();
 
     return 0;

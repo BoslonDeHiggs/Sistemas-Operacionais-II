@@ -1,6 +1,7 @@
 C_SOURCES = pea.cpp client/client.cpp client/frontend.cpp packet/packet.cpp format/format.cpp
 S_SOURCES = pea_server.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp
 T_SOURCES =  client/client.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp tests/file_test.cpp
+R_SOURCES = replica.cpp server/server.cpp packet/packet.cpp database/database.cpp format/format.cpp packet/communication_manager.cpp replica/replica_manager.cpp
 FLAGS = -std=c++20 -Wall -g
 
 cmp: pea pea_server 
@@ -13,3 +14,6 @@ pea: $(C_SOURCES)
 
 pea_server: $(S_SOURCES)
 	g++ -o pea_server $(FLAGS) $(S_SOURCES)
+
+replicas: $(R_SOURCES)
+	g++ -o replicas $(FLAGS) $(R_SOURCES)

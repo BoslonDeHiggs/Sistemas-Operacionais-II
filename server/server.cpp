@@ -12,10 +12,8 @@ Server::Server(uint16_t port){
     multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250");
     multicastAddr.sin_port = htons(MULTICAST_PORT);
 	setup_multicast(MULTICAST_PORT);
-	std::thread(&Server::listen_multicast, this).detach();
+	//std::thread(&Server::process_multicast, this).detach();
 	open_udp_connection(port);
-	send_multicast_initial_message();
-	//send_multicast("Servidor iniciado e juntando-se ao grupo multicast");
 }
 
 int Server::open_udp_connection(uint16_t port){
@@ -71,6 +69,10 @@ void Server::listen(){
 			Packet pkt = Packet::deserialize(buffer);
 
 			pkt_addr packet_address(pkt, clientAddress);
+
+			string messg = pkt._payload;
+			
+			print_rcv_msg(time(NULL),"a", messg);
 
 			unique_lock<mutex> lock_listen_process(mtx_listen_process);
 				pkts_queue_listen_process.push(packet_address);
@@ -273,7 +275,14 @@ void Server::call_sendThread(){
 	thread sendThread(&Server::send, this);
 	sendThread.join();
 }
+void Server::call_listenThread_multicast(){
+	std::thread(&Server::listen_multicast, this).detach();
 
+}
+void Server::call_processThread_multicast(){
+	std::thread(&Server::process_multicast, this).detach();
+
+}
 int Server::get_socket(){
 	return this->udpSocket;
 }
@@ -341,28 +350,45 @@ void Server::send_multicast_initial_message() {
 	std::string port = std::to_string(ntohs(serverAddress.sin_port)); // Porta em que o servidor esta ouvindo
 
     std::string message = "Servidor iniciado - Porta: " + port + "; ID: " + std::to_string(timestamp);
-    send_multicast(message);
+	Packet packet = Packet(SERVICE_DISCOVERY, 0 , message.length(), timestamp, std::to_string(timestamp), message);
+	string serialized_packet = packet.serialize();
+    send_multicast(serialized_packet);
 }
 
 void Server::listen_multicast() {
-    // Buffer para receber mensagens multicast
-    char buffer[1024];
-    while (true) {
-        // Escuta por mensagens multicast
+	while (true){
+		// ie data
+		char buffer[1024];
         socklen_t addrlen = sizeof(multicastAddr);
-        int bytesRead = recvfrom(multicastSocket, buffer, sizeof(buffer), 0,
+		int bytesRead = recvfrom(multicastSocket, buffer, sizeof(buffer), 0,
                                  (struct sockaddr*)&multicastAddr, &addrlen);
         if (bytesRead < 0) {
             perror("Receiving multicast message failed");
-            continue;
         }
+		else{
+			 // Terminacao nula dos dados recebidos e processamento da mensagem
+    		buffer[bytesRead] = '\0';
+			Packet pkt = Packet::deserialize(buffer);
 
-        // Terminacao nula dos dados recebidos e processamento da mensagem
-        buffer[bytesRead] = '\0';
-        std::string receivedMessage(buffer);
-        std::cout << "Received multicast message - IP: " << inet_ntoa(multicastAddr.sin_addr) << " - PORT: " << ntohs(multicastAddr.sin_port) << " " << receivedMessage << std::endl;
+        	std::string receivedMessage(pkt._payload);
+        	std::cout << "Received multicast message - IP: " << inet_ntoa(multicastAddr.sin_addr) << " - PORT: " << ntohs(multicastAddr.sin_port) << " " << receivedMessage << std::endl;
 
-        // Aqui voce pode analisar a mensagem recebida e responder se necessario
-        // Este e o lugar para implementar a logica de resposta ao multicast recebido
-    }
+			pkt_addr packet_address(pkt, multicastAddr);
+
+			unique_lock<mutex> lock_listen_process(mtx_listen_process_multicast);
+				pkts_queue_listen_process_multicast.push(packet_address);
+			cv_listen_process_multicast.notify_one();
+		}
+	}
+}
+
+void Server::process_multicast(){
+	while(true){
+        unique_lock<mutex> lock_listen_process(mtx_listen_process_multicast);
+            cv_listen_process_multicast.wait(lock_listen_process, [this]() { return !pkts_queue_listen_process_multicast.empty(); });
+        pkt_addr packet_address = pkts_queue_listen_process_multicast.front();
+        pkts_queue_listen_process_multicast.pop();
+
+		//do nothing
+	}
 }

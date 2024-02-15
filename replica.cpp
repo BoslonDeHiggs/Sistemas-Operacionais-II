@@ -9,21 +9,23 @@ using namespace std;
 int main(int argc, char **argv)
 {
     // Parse command line input
-    if (argc < 4)
+    if (argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << "<replica-port> <leader-ip> <leader-port>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << "<replica-port> <is-leader>" << std::endl;
         return 1;
     }
 
     try
     {
         // Create an instance of Replica
-        ReplicaManager replica(atoi(argv[1]), argv[2], atoi(argv[3]));
+        ReplicaManager replica(atoi(argv[1]),atoi(argv[2]));
 
         // Start listening for connections
-        replica.open_udp_connection(atoi(argv[1]));
-        replica.call_processThread();
+        replica.init_database();
         replica.call_listenThread();
+        replica.call_processThread();
+        replica.call_sendThread();
+
     }
     catch (const std::runtime_error &e)
     {

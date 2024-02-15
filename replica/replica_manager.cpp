@@ -16,11 +16,21 @@ sockaddr_in get_addr_from_ip_and_port(const char* ip, uint16_t port){
     return addr;
 }
 
-ReplicaManager::ReplicaManager(uint16_t replica_port, const char* leader_ip, uint16_t leader_port) : Server(replica_port){
+ReplicaManager::ReplicaManager(uint16_t replica_port, int is_leader) : Server(replica_port){
 
     // Set up the leader address struct
-    this->leader_addr = get_addr_from_ip_and_port(leader_ip, leader_port);
-    this->id = getpid();
+    this->id = time(NULL);
+    if (is_leader)
+        this->leader_id = this->id;
+    else
+        this->leader_id = ERROR_ID;
+    this->call_listenThread_multicast();
+    this->call_processThread_multicast();   
+    ReplicaInfo info = ReplicaInfo(this->id, (uint16_t)this->serverAddress.sin_port, this->serverAddress.sin_addr);
+    string message = info.serialize();
+    Packet packet = Packet(LINK_REPLICA,0,message.length(),time(NULL),to_string(this->id),message);
+    string serialized_packet = packet.serialize();
+    send_multicast(serialized_packet);
     //Send message to leader -> leader will add this replica to his replicas map
     //Leader will have to send the updated replicas map to this replica and his id
 }
@@ -41,7 +51,7 @@ void ReplicaManager::start_election(){
     this->election_started = true;
     replicas.erase(previous_leader);
     this->leader_id = ERROR_ID;
-    string empty = '\0';
+    string empty = "\0";
 
     string replica_name = "SERVER" + to_string(this->id);
     // While new leader is not elected
@@ -104,7 +114,134 @@ void ReplicaManager::become_leader(){
     
     print_server_ntf(time(NULL), "Lider pronto: ", to_string(this->id));
 }
+void ReplicaManager::update_replica_on_replica_address(sockaddr_in replica_addr){
+    cerr<<"upodate";
+    //serialize all info needed for update
+    string message_queue = UpdateMessageQueueInfo(this->database.messageQueue).serialize();
+    string replicas_map_and_leader = UpdateReplicasInfo(this->leader_id,this->replicas.size(), this->replicas).serialize();
+    string followers_map = UpdateFollowersInfo(this->database.followersMap).serialize();
+    string address_map = UpdateAddressMapInfo(this->database.addressMap).serialize();
+    //create all packets for update
+    Packet update_replicas_list = Packet(UPDATE_REPLICAS_LIST, 0 , replicas_map_and_leader.length(), time(NULL), "PRIMARY SERVER", replicas_map_and_leader);
+    Packet update_replicas_followers = Packet(UPDATE_REPLICA_FOLLOWERS,0, followers_map.length(), time(NULL), "PRIMARY SERVER", followers_map);
+    Packet update_replicas_client_queue = Packet(UPDATE_REPLICA_CLIENT_PACKET_QUEUE, 0, message_queue.length(), time(NULL), "PRIMARY SERVER", message_queue);
+    Packet update_replicas_name_to_address_map = Packet(UPDATE_REPLICA_ADDRESS_MAP, 0, address_map.length(), time(NULL), "PRIMARY SERVER", address_map);
+    //send packets
+    this->pushSendQueue(update_replicas_list, replica_addr);
+    this->pushSendQueue(update_replicas_followers,replica_addr);
+    this->pushSendQueue(update_replicas_client_queue,replica_addr);
+    this->pushSendQueue(update_replicas_name_to_address_map,replica_addr);
+}
 
-void ReplicaManager::process_manager(){
+void ReplicaManager::handle_link_replica(Packet packet){
+	//The replica that sent this packet wants to link themselves to this object
+	ReplicaInfo info = ReplicaInfo::deserialize(packet._payload);
+    //if replica that sent is different from this replica
+    if (info.id != this->id){
+        cerr<<"qweas";
 
+        in_addr ip;
+        ip = info.ip;
+        sockaddr_in replica_addr = get_addr_from_ip_and_port(inet_ntoa(ip), info.port);
+        int replica_id = info.id;
+        this->replicas.insert({replica_id,replica_addr});
+        if (this->id == this->leader_id) {
+            update_replica_on_replica_address(replica_addr);
+        }
+    }
+}
+
+void ReplicaManager::handle_update_replica(Packet packet){}
+
+void ReplicaManager::handle_election_coordinator(Packet packet){
+	ReplicaInfo info = ReplicaInfo::deserialize(packet._payload);
+    this->leader_id = info.id;
+    //just to be sure do this:
+    in_addr ip;
+    ip = info.ip;
+    sockaddr_in addr = get_addr_from_ip_and_port(inet_ntoa(ip), info.port);
+    this->replicas.insert({this->leader_id, addr});
+}
+void ReplicaManager::process_multicast(){
+	while(true){
+        unique_lock<mutex> lock_listen_process(mtx_listen_process_multicast);
+            cv_listen_process_multicast.wait(lock_listen_process, [this]() { return !pkts_queue_listen_process_multicast.empty(); });
+        pkt_addr packet_address = pkts_queue_listen_process_multicast.front();
+        pkts_queue_listen_process_multicast.pop();
+
+        Packet pkt = packet_address.pkt;
+        //sockaddr_in clientAddress = packet_address.addr;
+		sockaddr_in clientAddress = packet_address.addr;
+		
+		if (pkt.type == LOGIN) {
+			handleLogin(pkt,clientAddress);
+		}
+		else{
+			bool logged = database.is_logged_in_addr(pkt.name, clientAddress);
+			if(logged){
+				if(pkt.type == SEND){
+					handleSend(pkt, clientAddress);
+				}
+				else if(pkt.type == FOLLOW){
+					handleFollow(pkt,clientAddress);
+				}
+ 				else if(pkt.type == EXIT){
+					handleExit(pkt,clientAddress);
+				}
+			}
+		}
+	}
+        switch (pkt.type)
+        {
+        case LINK_REPLICA:
+            handle_link_replica(pkt);
+            break;
+        case UPDATE_REPLICA_CLIENT_PACKET_QUEUE:
+        case UPDATE_REPLICA_FOLLOWERS:
+        case UPDATE_REPLICA_ADDRESS_MAP:
+        case UPDATE_REPLICAS_LIST:
+            handle_update_replica(pkt);
+            break;
+        case ELECTION_COORDINATOR:
+            handle_election_coordinator(pkt);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void ReplicaManager::call_processThread_multicast(){
+	std::thread(&ReplicaManager::process_multicast, this).detach();
+}
+
+void ReplicaManager::process(){
+	while(true){
+		unique_lock<mutex> lock_listen_process(mtx_listen_process);
+			cv_listen_process.wait(lock_listen_process, [this]() { return !pkts_queue_listen_process.empty(); });
+		pkt_addr packet_address = pkts_queue_listen_process.front();
+		pkts_queue_listen_process.pop();
+
+		Packet pkt = packet_address.pkt;
+		sockaddr_in clientAddress = packet_address.addr;
+		
+		if (pkt.type == LOGIN) {
+			handleLogin(pkt,clientAddress);
+		}
+		else{
+			bool logged = database.is_logged_in_addr(pkt.name, clientAddress);
+			if(logged){
+				if(pkt.type == SEND){
+					handleSend(pkt, clientAddress);
+                    update_replica_on_replica_address(clientAddress)
+				}
+				else if(pkt.type == FOLLOW){
+					handleFollow(pkt,clientAddress);
+				}
+ 				else if(pkt.type == EXIT){
+					handleExit(pkt,clientAddress);
+				}
+			}
+		}
+	}
 }
