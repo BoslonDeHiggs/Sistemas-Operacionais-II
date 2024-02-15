@@ -13,6 +13,7 @@ Server::Server(uint16_t port){
     multicastAddr.sin_port = htons(MULTICAST_PORT);
 	setup_multicast(MULTICAST_PORT);
 	std::thread(&Server::listen_multicast, this).detach();
+	//std::thread(&Server::send_multicast, this).detach();
 	//std::thread(&Server::send_heartbeat, this).detach();
 	open_udp_connection(port);
 	send_multicast_initial_message();
@@ -274,12 +275,12 @@ void Server::call_processThread(){
 
 void Server::call_heartbeatThread(){
 	thread heartbeatThread(&Server::send_heartbeat, this);
-	heartbeatThread.join();
+	heartbeatThread.detach();
 }
 
 void Server::call_sendThread(){
 	thread sendThread(&Server::send, this);
-	sendThread.detach();
+	sendThread.join();
 }
 
 int Server::get_socket(){
@@ -288,6 +289,14 @@ int Server::get_socket(){
 
 void Server::setup_multicast(uint16_t port) {
     // Criacao do socket multicast
+
+	//gera parte final aleatoria para ip
+	std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 255);
+    int randomPart = dis(gen);
+	std::string multicastAddress = "239.255.255." + std::to_string(randomPart);
+
     multicastSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (multicastSocket < 0) {
         perror("Multicast socket creation failed");
@@ -304,7 +313,8 @@ void Server::setup_multicast(uint16_t port) {
     // Definindo o endereco e porta do grupo multicast
     memset(&multicastAddr, 0, sizeof(multicastAddr));
     multicastAddr.sin_family = AF_INET;
-    multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250"); // Exemplo de endereco multicast
+    multicastAddr.sin_addr.s_addr = htonl(INADDR_ANY); // Exemplo de endereco multicast
+	//multicastAddr.sin_addr.s_addr = inet_addr("239.255.255.250");
     multicastAddr.sin_port = htons(port);
 
     // Associacao do socket ao endereco multicast
@@ -316,7 +326,7 @@ void Server::setup_multicast(uint16_t port) {
 
     // Juncao ao grupo multicast
     struct ip_mreq mreq;
-    mreq.imr_multiaddr = multicastAddr.sin_addr;
+    mreq.imr_multiaddr.s_addr = inet_addr("239.255.255.250");
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     if (setsockopt(multicastSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
         perror("Multicast group join failed");
@@ -329,6 +339,7 @@ void Server::setup_multicast(uint16_t port) {
 
 void Server::send_multicast(const std::string& message) {
     // Envio da mensagem para o grupo multicast
+	//std::lock_guard<std::mutex> lock(mtx_multicast);
     int bytesSent = sendto(multicastSocket, message.c_str(), message.length(), 0,
                            (struct sockaddr*)&multicastAddr, sizeof(multicastAddr));
     if (bytesSent < 0) {
@@ -358,8 +369,10 @@ void Server::listen_multicast() {
 		char buffer[1024];
         // Escuta por mensagens multicast
         socklen_t addrlen = sizeof(multicastAddr);
+		//cout << "antes do recvfrom" << endl;
         int bytesRead = recvfrom(multicastSocket, buffer, sizeof(buffer), 0,
                                  (struct sockaddr*)&multicastAddr, &addrlen);
+		//cout << "cheguei no listen_multicast e o bytesRead tem tamanho " << to_string(bytesRead) << endl;
         if (bytesRead < 0) {
             perror("Receiving multicast message failed");
             continue;
@@ -378,12 +391,14 @@ void Server::listen_multicast() {
 }
 
 void Server::send_heartbeat() {
+	int i = 0;
     while(true) {
 		std::string id = to_string(timestamp);
 		//cout << "Sending heartbeats from " << id << endl;
-        send_multicast("heartbeats ");
+        send_multicast(to_string(i)+" - heartbeats: "+id);
+		i++;
 
-        // Aguarde um intervalo de tempo antes de enviar o próximo heartbeat
+        // Aguarde um intervalo de tempo antes de enviar o proximo heartbeat
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }

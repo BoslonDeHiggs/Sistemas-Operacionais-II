@@ -15,6 +15,7 @@
 #include <semaphore>
 #include <mutex>
 #include <condition_variable>
+#include <random>
 
 using namespace std;
 
@@ -63,7 +64,7 @@ private:
     Database database;
     queue<pkt_addr> pkts_queue_listen_process, pkts_queue_process_send;
 
-    mutex mtx_listen_process, mtx_process_send;
+    mutex mtx_listen_process, mtx_process_send, mtx_multicast;
     condition_variable cv_listen_process, cv_process_send;
 
     void listen();
