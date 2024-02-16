@@ -33,9 +33,11 @@ public:
 
     void init_database();
 
-    void send(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload);
+    void send_pkt(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload);
 
     void call_listenThread();
+
+    void call_listenBroadcastThread();
 
     void call_processThread();
 
@@ -44,15 +46,19 @@ public:
     int get_socket();
 
 private:
-	int udpSocket;
-    sockaddr_in serverAddress;
+	int udpSocket, broadcastSocket;
+    sockaddr_in serverAddress, broadcastAddr;
     Database database;
     queue<pkt_addr> pkts_queue;
 
     mutex mtx;
     condition_variable cv;
 
+    int create_broadcast_socket();
+
     void listen();
+
+    void listen_broadcast();
 
     void process();
 

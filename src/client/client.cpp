@@ -2,31 +2,90 @@
 #include "../packet/packet.hpp"
 #include <netdb.h>
 
+#define BROADCAST_PORT 16384
+
 using namespace std;
 
-//int globalUdpSocket; //Variavel global para armazenar udpSocket
-//Client* globalSession = nullptr;
 Client* globalClientPointer = nullptr;
 
-Client::Client(string input){
-    this->c_info.name = "@" + input;
-
-    //globalUdpSocket = udpSocket;
+Client::Client(string name, const char *ip, uint16_t port){
+    this->name = "@" + name;
     globalClientPointer = this;
-    std::signal(SIGINT, Client::signalHandler); //Teste inicial para encerrar sessao
+    std::signal(SIGINT, Client::signalHandler);
+    create_udp_socket();
+    create_broadcast_socket();
+
+    send_broadcast_pkt(DISCOV_MSG, get_own_address(udpSocket));
+    connect_to_udp_server(ip, port);
+    call_listenThread();
+    call_sendThread();
 }
 
 Client::~Client() {
     globalClientPointer = nullptr;
 }
 
-int Client::connect_to_udp_server(const char *ip, uint16_t port){
-    // Create a UDP socket
+string Client::get_own_address(int sockfd){
+    sockaddr_in sockname;
+    socklen_t socklen = sizeof(sockname);
+
+    // Retrieve the socket address information
+    if (getsockname(sockfd, reinterpret_cast<sockaddr*>(&sockname), &socklen) == -1) {
+        // Handle error
+        // For example, throw an exception or return an empty string
+        return "";
+    }
+
+    // Convert the IP address to a string
+    char buffer[INET_ADDRSTRLEN];
+    const char* p = inet_ntop(AF_INET, &sockname.sin_addr, buffer, sizeof(buffer));
+    if (p == nullptr) {
+        // Handle error
+        // For example, throw an exception or return an empty string
+        return "";
+    }
+
+    // Convert port to string
+    uint16_t port = ntohs(sockname.sin_port);
+
+    // Return the IP address and port as a string
+    return std::string(p) + ":" + std::to_string(port);
+}
+
+int Client::create_udp_socket(){
     udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udpSocket == -1) {
         print_error_msg("Error creating socket");
         return -100;
     }
+
+    return 0;
+}
+
+int Client::create_broadcast_socket() {
+    broadcastSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (broadcastSocket == -1) {
+        print_error_msg("Error creating broadcast socket");
+        return -100;
+    }
+
+    // Enable broadcast option
+    int broadcastEnable = 1;
+    if (setsockopt(broadcastSocket, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
+        print_error_msg("Error setting broadcast option");
+        close(broadcastSocket);
+        return -200;
+    }
+
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr));
+    broadcastAddr.sin_family = AF_INET;
+    broadcastAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST); // Broadcasting to all interfaces
+    broadcastAddr.sin_port = htons(BROADCAST_PORT);
+
+    return 0;
+}
+
+int Client::connect_to_udp_server(const char *ip, uint16_t port){
 
     // Set up the server address struct
     struct hostent *server = gethostbyname(ip);
@@ -48,14 +107,8 @@ void Client::login(){
     Client::send_pkt(LOGIN, "Request for login");
 }
 
-void Client::follow(string username){
-    Client::send_pkt(FOLLOW, username);
-}
-void Client::send_message(string msg){
-    Client::send_pkt(SEND, msg);
-}
 void Client::send_pkt(uint16_t code, string payload){
-    Packet packet(code, 0, payload.length(), time(NULL), this->c_info.name, payload);
+    Packet packet(code, 0, payload.length(), time(NULL), this->name, payload);
 
     string aux = packet.serialize();
 
@@ -66,7 +119,22 @@ void Client::send_pkt(uint16_t code, string payload){
     }
 }
 
+void Client::send_broadcast_pkt(uint16_t code, string payload){
+    Packet packet(code, 0, payload.length(), time(NULL), this->name, payload);
+
+    string aux = packet.serialize();
+
+    const char* message = aux.c_str();
+    ssize_t bytesSent = sendto(broadcastSocket, message, strlen(message), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+    if (bytesSent < 0) {
+        print_error_msg("Error sending broadcast message");
+    }
+}
+
 void Client::get_input(){
+    
+    login();
+
     while (true){
         char input[BUFFER_SIZE];
         
@@ -93,11 +161,11 @@ void Client::get_input(){
         else{
             if(code == "SEND"){
                 send_pkt(SEND, msg);
-                print_send_msg(timestamp, this->c_info.name, code, msg);
+                print_send_msg(timestamp, this->name, code, msg);
             }
             else if(code == "FOLLOW"){
                 send_pkt(FOLLOW, msg);
-                print_send_msg(timestamp, this->c_info.name, code, msg);
+                print_send_msg(timestamp, this->name, code, msg);
             }
             else{
                 print_error_msg("Command not valid");
@@ -137,7 +205,7 @@ void Client::call_listenThread(){
 }
 
 void Client::sendExit(){
-    Packet packet(EXIT, 0, 0, time(NULL), this->c_info.name, "Terminating session");
+    Packet packet(EXIT, 0, 0, time(NULL), this->name, "Terminating session");
     string message = packet.serialize();
     ssize_t bytesSent = send(udpSocket, message.c_str(), message.length(), 0);
     if (bytesSent == -1) {

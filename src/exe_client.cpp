@@ -1,11 +1,9 @@
 #include "client/client.hpp"
 
-#define PORT 4000
-
 int main(int argc, char* argv[]){
 
-    if(argc != 3){
-        print_error_msg("Invalid arguments");
+    if(argc != 4){
+        print_error_msg("./client @<name> <server IP> <server PORT>");
         return 0;
     }
 
@@ -20,15 +18,10 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    Client client(name);
-    //globalSession = &client;
-    client.connect_to_udp_server(argv[2], PORT);
-    client.login();
+    const char* ip = argv[2];
+    uint16_t port = atoi(argv[3]);
 
-    /* signal(SIGINT, Client::exit); */
-
-    client.call_listenThread();
-    client.call_sendThread();
+    Client client(name, ip, port);
 
     return 0;
 }

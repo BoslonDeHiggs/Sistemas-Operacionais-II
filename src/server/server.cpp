@@ -1,9 +1,26 @@
 #include "server.hpp"
 #include "../packet/packet.hpp"
 
+#define BROADCAST_PORT 16384
+
 using namespace std;
 
-Server::Server(uint16_t port){}
+Server::Server(uint16_t port){
+	init_database();
+	open_udp_connection(port);
+	create_broadcast_socket();
+	call_listenThread();
+	call_listenBroadcastThread();
+	call_processThread();
+}
+
+void Server::init_database(){
+	int code = this->database.open();
+	if(code == -1){
+		print_error_msg("Error while opening file");
+	}
+	this->database.read();
+}
 
 int Server::open_udp_connection(uint16_t port){
 	// Open UDP socket
@@ -30,12 +47,34 @@ int Server::open_udp_connection(uint16_t port){
 	return 0;
 }
 
-void Server::init_database(){
-	int code = this->database.open();
-	if(code == -1){
-		print_error_msg("Error while opening file");
-	}
-	this->database.read();
+int Server::create_broadcast_socket() {
+    broadcastSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (broadcastSocket == -1) {
+        print_error_msg("Error creating broadcast socket");
+        return -100;
+    }
+
+    // Enable broadcast option
+    int broadcastEnable = 1;
+    if (setsockopt(broadcastSocket, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
+        print_error_msg("Error setting broadcast option");
+        close(broadcastSocket);
+        return -200;
+    }
+
+    memset(&broadcastAddr, 0, sizeof(broadcastAddr));
+    broadcastAddr.sin_family = AF_INET;
+    broadcastAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST); // Broadcasting to all interfaces
+    broadcastAddr.sin_port = htons(BROADCAST_PORT);
+
+	// Bind broadcast socket
+    if (bind(broadcastSocket, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) == -1) {
+        print_error_msg("Error binding broadcast socket");
+        close(broadcastSocket);
+        return -300;
+    }
+
+    return 0;
 }
 
 void Server::listen(){
@@ -64,7 +103,27 @@ void Server::listen(){
 	}
 }
 
-void Server::send(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload){
+void Server::listen_broadcast() {
+    while (true) {
+		char buffer[1024];
+		sockaddr_in clientAddress;
+		socklen_t clientAddressLength = sizeof(clientAddress);
+
+        ssize_t bytesRead = recvfrom(broadcastSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddress, &clientAddressLength);
+
+        if (bytesRead == -1) {
+            print_error_msg("Error receiving broadcast message");
+        } else {
+            buffer[bytesRead] = '\0'; // Null-terminate the received data
+
+			Packet pkt = Packet::deserialize(buffer);
+
+            std::cout << "Received broadcast message from " << pkt.name << ":" << pkt._payload << std::endl;
+        }
+    }
+}
+
+void Server::send_pkt(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload){
     Packet packet(0, 0, payload.length(), timestamp, clientName, payload);
 
     string aux = packet.serialize();
@@ -91,7 +150,7 @@ void Server::handleNewAccount(const Packet& pkt, const sockaddr_in& clientAddres
     print_server_ntf(time(NULL), "User doesn't have an account", "");
     print_server_ntf(time(NULL), "Creating account for", pkt.name);
     database.sign_up(pkt.name, clientAddress);
-    send(clientAddress, time(NULL), "SERVER", "Account created successfully");
+    send_pkt(clientAddress, time(NULL), "SERVER", "Account created successfully");
     database.write();
 }
 
@@ -100,12 +159,12 @@ void Server::handleExistingAccount(const Packet& pkt, const sockaddr_in& clientA
     if (it == database.addressMap.end() || it->second.size() < 2) {
         print_server_ntf(time(NULL), "Login from", pkt.name);
         database.login(pkt.name, clientAddress);
-        send(clientAddress, time(NULL), "SERVER", "Login successful");
+        send_pkt(clientAddress, time(NULL), "SERVER", "Login successful");
         print_server_ntf(time(NULL), "Verifying pending messages for", pkt.name);
         sendPendingMessages(pkt.name, clientAddress);
     } else {
         print_server_ntf(time(NULL), "There are two other sessions already active from", pkt.name);
-        send(clientAddress, time(NULL), "SERVER", "There are two other sessions already active");
+        send_pkt(clientAddress, time(NULL), "SERVER", "There are two other sessions already active");
     }
 }
 
@@ -117,7 +176,7 @@ void Server::handleSend(const Packet& pkt, const sockaddr_in& clientAddress) {
 			map<string, vector<sockaddr_in>>::iterator it;
 			it = database.addressMap.find(follower);
 			for(sockaddr_in address : it->second)
-				send(address, pkt.timestamp, pkt.name, pkt._payload);
+				send_pkt(address, pkt.timestamp, pkt.name, pkt._payload);
 		}
 		else{
 			print_server_ntf(time(NULL), "Storing messages in message queue for", follower);
@@ -138,16 +197,16 @@ void Server::handleFollow(const Packet& pkt, const sockaddr_in& clientAddress) {
             if (successful) {
                 database.write();
                 print_server_follow_ntf(time(NULL), "started following", pkt.name, pkt._payload);
-                send(clientAddress, time(NULL), "SERVER", "You started following " + pkt._payload);
+                send_pkt(clientAddress, time(NULL), "SERVER", "You started following " + pkt._payload);
             } else {
-                send(clientAddress, time(NULL), "SERVER", "You already follow " + pkt._payload);
+                send_pkt(clientAddress, time(NULL), "SERVER", "You already follow " + pkt._payload);
             }
         } else {
-            send(clientAddress, time(NULL), "SERVER", "Can't follow self");
+            send_pkt(clientAddress, time(NULL), "SERVER", "Can't follow self");
         }
     } else {
         print_server_ntf(time(NULL), "Something went wrong", "");
-        send(clientAddress, time(NULL), "SERVER", "Something went wrong");
+        send_pkt(clientAddress, time(NULL), "SERVER", "Something went wrong");
     }
 }
 
@@ -193,19 +252,24 @@ void Server::process(){
 
 void Server::call_listenThread(){
 	thread listenThread(&Server::listen, this);
-	listenThread.join();
+	listenThread.detach();
+}
+
+void Server::call_listenBroadcastThread(){
+	thread listenBroadcastThread(&Server::listen_broadcast, this);
+	listenBroadcastThread.detach();
 }
 
 void Server::call_processThread(){
 	thread processThread(&Server::process, this);
-	processThread.detach();
+	processThread.join();
 }
 
 void Server::sendPendingMessages(const string& username, const sockaddr_in& clientAddress) {
     auto& queue = database.messageQueue[username];
     while (!queue.empty()) {
         Packet messagePkt = queue.front();
-        send(clientAddress, messagePkt.timestamp, messagePkt.name, messagePkt._payload);
+        send_pkt(clientAddress, messagePkt.timestamp, messagePkt.name, messagePkt._payload);
         queue.pop();
     }
 }

@@ -16,17 +16,11 @@ using namespace std;
 
 class Client{
 public:
-    Client(string input);
+    Client(string name, const char *ip, uint16_t port);
     
     int connect_to_udp_server(const char *ip, uint16_t port);
 
     void login();
-
-    //static void exit(int signal); //Teste inicial de encerramento de sessao
-
-    void follow(string username);
-
-    void send_message(string msg);
 
     void call_sendThread();
 
@@ -36,19 +30,23 @@ public:
 
     ~Client();
 
-    static void signalHandler(int signal); //Teste incial de encerrar sessao
-
-    //static bool encerrarSessao;
+    static void signalHandler(int signal);
 
 private:
-    struct client{
-        string name;
-    }c_info;
+    string name;
 
-    int udpSocket;
-    sockaddr_in serverAddress;
+    int udpSocket, broadcastSocket;
+    sockaddr_in serverAddress, broadcastAddr;
+
+    int create_udp_socket();
+
+    int create_broadcast_socket();
+
+    string get_own_address(int sockfd);
 
     void send_pkt(uint16_t code, string msg_in);
+
+    void send_broadcast_pkt(uint16_t code, string payload);
 
     void get_input();
 
@@ -56,4 +54,3 @@ private:
 };
 
 extern Client* globalClientPointer;
-//bool Client::encerrarSessao = false;

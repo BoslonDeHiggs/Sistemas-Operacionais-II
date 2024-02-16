@@ -38,11 +38,7 @@ Packet Packet::deserialize(string serpkt){
 
     getline(tokenizer, message);
 
-    // cout << "Aux_str.c_str(): " << message.c_str() << endl;
-
     Packet pkt(stoi(tokens[0]), stoi(tokens[1]), stoi(tokens[2]), (time_t)stoi(tokens[3]), tokens[4], message);
-
-    // cout << pkt.type << ' ' << pkt.seqn << ' ' << pkt.length << ' ' << pkt.timestamp << ' ' << pkt._payload << endl;
 
     return pkt;
 }
