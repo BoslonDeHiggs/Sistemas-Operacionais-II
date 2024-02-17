@@ -15,6 +15,7 @@
 #include <semaphore>
 #include <mutex>
 #include <condition_variable>
+#include <netdb.h>
 
 using namespace std;
 
@@ -53,6 +54,8 @@ private:
 
     mutex mtx;
     condition_variable cv;
+
+    string get_own_address(int sockfd);
 
     int create_broadcast_socket();
 

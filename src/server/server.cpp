@@ -14,6 +14,34 @@ Server::Server(uint16_t port){
 	call_processThread();
 }
 
+string Server::get_own_address(int sockfd){
+    sockaddr_in sockname;
+    socklen_t socklen = sizeof(sockname);
+
+    // Retrieve the socket address information
+    if (getsockname(sockfd, reinterpret_cast<sockaddr*>(&sockname), &socklen) == -1) {
+        // Handle error
+        // For example, throw an exception or return an empty string
+        return "";
+    }
+
+    // Convert the IP address to a string
+    char buffer[INET_ADDRSTRLEN];
+    const char* p = inet_ntop(AF_INET, &sockname.sin_addr, buffer, sizeof(buffer));
+    if (p == nullptr) {
+        // Handle error
+        // For example, throw an exception or return an empty string
+        return "";
+    }
+
+    // Convert port to string
+    uint16_t port = ntohs(sockname.sin_port);
+
+    // Return the IP address and port as a string
+    return std::string(p) + ":" + std::to_string(port);
+}
+
+
 void Server::init_database(){
 	int code = this->database.open();
 	if(code == -1){
@@ -118,7 +146,35 @@ void Server::listen_broadcast() {
 
 			Packet pkt = Packet::deserialize(buffer);
 
-            std::cout << "Received broadcast message from " << pkt.name << ":" << pkt._payload << std::endl;
+			char clientIp[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &clientAddress.sin_addr, clientIp, INET_ADDRSTRLEN);
+			int clientPort = ntohs(clientAddress.sin_port);
+
+			struct sockaddr_in responseAddress;
+			memset(&responseAddress, 0, sizeof(responseAddress));
+			responseAddress.sin_family = AF_INET;
+			responseAddress.sin_port = htons(clientPort);
+			if (inet_pton(AF_INET, clientIp, &responseAddress.sin_addr) <= 0) {
+				perror("inet_pton");
+				return;
+			}
+
+			sleep(3);
+
+			string payload = "Hello World!";
+
+			Packet packet(0, 0, payload.length(), time(NULL), "SERVER", payload);
+
+			string aux = packet.serialize();
+
+			const char* message = aux.c_str();
+
+			ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&responseAddress, sizeof(responseAddress));
+			if (bytesSent == -1) {
+				print_error_msg("Error sending data to client");
+			}
+
+            std::cout << pkt.name << " " << clientIp << ":" << clientPort << std::endl;
         }
     }
 }
