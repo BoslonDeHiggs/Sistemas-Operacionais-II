@@ -51,6 +51,8 @@ private:
     void get_input();
 
     void listen();
+
+    void listen_broadcast();
 };
 
 extern Client* globalClientPointer;

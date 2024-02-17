@@ -194,6 +194,35 @@ void Client::listen(){
     }
 }
 
+void Client::listen_broadcast() {
+    while (true) {
+		char buffer[1024];
+		socklen_t broadcastAddrLenght = sizeof(broadcastAddr);
+
+        ssize_t bytesRead = recvfrom(broadcastSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&broadcastAddr, &broadcastAddrLenght);
+
+        if (bytesRead == -1) {
+            print_error_msg("Error receiving broadcast message");
+        } else {
+            buffer[bytesRead] = '\0'; // Null-terminate the received data
+
+			Packet pkt = Packet::deserialize(buffer);
+
+			char serverIp[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &broadcastAddr.sin_addr, serverIp, INET_ADDRSTRLEN);
+			int serverPort = ntohs(broadcastAddr.sin_port);
+
+			struct sockaddr_in responseAddress;
+			memset(&responseAddress, 0, sizeof(responseAddress));
+			responseAddress.sin_family = AF_INET;
+			responseAddress.sin_port = htons(serverPort);
+			if (inet_pton(AF_INET, serverIp, &responseAddress.sin_addr) <= 0) {
+				perror("inet_pton");
+			}
+        }
+    }
+}
+
 void Client::call_sendThread(){
     thread sendThread(&Client::get_input, this);
     sendThread.join();

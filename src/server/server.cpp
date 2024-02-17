@@ -134,10 +134,9 @@ void Server::listen(){
 void Server::listen_broadcast() {
     while (true) {
 		char buffer[1024];
-		sockaddr_in clientAddress;
-		socklen_t clientAddressLength = sizeof(clientAddress);
+		socklen_t broadcastAddrLenght = sizeof(broadcastAddr);
 
-        ssize_t bytesRead = recvfrom(broadcastSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddress, &clientAddressLength);
+        ssize_t bytesRead = recvfrom(broadcastSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&broadcastAddr, &broadcastAddrLenght);
 
         if (bytesRead == -1) {
             print_error_msg("Error receiving broadcast message");
@@ -147,8 +146,8 @@ void Server::listen_broadcast() {
 			Packet pkt = Packet::deserialize(buffer);
 
 			char clientIp[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &clientAddress.sin_addr, clientIp, INET_ADDRSTRLEN);
-			int clientPort = ntohs(clientAddress.sin_port);
+			inet_ntop(AF_INET, &broadcastAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
+			int clientPort = ntohs(broadcastAddr.sin_port);
 
 			struct sockaddr_in responseAddress;
 			memset(&responseAddress, 0, sizeof(responseAddress));
@@ -169,7 +168,7 @@ void Server::listen_broadcast() {
 
 			const char* message = aux.c_str();
 
-			ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&responseAddress, sizeof(responseAddress));
+			ssize_t bytesSent = sendto(broadcastSocket, message, strlen(message), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
 			if (bytesSent == -1) {
 				print_error_msg("Error sending data to client");
 			}
