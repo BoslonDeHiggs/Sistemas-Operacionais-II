@@ -1,16 +1,17 @@
 #include "server.hpp"
 #include "../packet/packet.hpp"
 
+#define PORT 4000
 #define BROADCAST_PORT 16384
 
 using namespace std;
 
-Server::Server(uint16_t port){
+Server::Server(){
 	id = time(NULL);
 	leader = false;
 
 	init_database();
-	open_udp_connection(port);
+	open_udp_connection(PORT);
 	create_broadcast_socket();
 	send_broadcast_pkt(NEW_SERVER, time(NULL), "SERVER"+to_string(id), to_string(id));
 	call_listenBroadcastThread();
@@ -212,6 +213,8 @@ void Server::process_broadcast(){
             while (std::getline(infile, line)) {
                 database_content += line + "\n";
             }
+
+			address.sin_port = PORT;
 
             infile.close();
 			send_pkt(DATABASE, address, time(NULL), "SERVER", database_content);
