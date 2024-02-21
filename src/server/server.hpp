@@ -34,13 +34,19 @@ public:
 
     void init_database();
 
-    void send_pkt(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload);
+    void send_pkt(uint16_t type, sockaddr_in clientAddress, time_t timestamp, string name, string payload);
+
+    void send_broadcast_pkt(uint16_t type, time_t timestamp, string name, string payload);
 
     void call_listenThread();
 
     void call_listenBroadcastThread();
 
     void call_processThread();
+
+    void call_processBroadcastThread();
+
+    void call_heartbeatThread();
 
     void sendPendingMessages(const string& username, const sockaddr_in& clientAddress);
 
@@ -50,10 +56,13 @@ private:
 	int udpSocket, broadcastSocket;
     sockaddr_in serverAddress, broadcastAddr;
     Database database;
-    queue<pkt_addr> pkts_queue;
+    queue<pkt_addr> pkts_queue, pkts_queue_broadcast;
+    map<time_t, sockaddr_in> serverList;
+    time_t id;
+    bool leader;
 
-    mutex mtx;
-    condition_variable cv;
+    mutex mtx, mtx_broadcast;
+    condition_variable cv, cv_broadcast;
 
     string get_own_address(int sockfd);
 
@@ -64,6 +73,10 @@ private:
     void listen_broadcast();
 
     void process();
+
+    void process_broadcast();
+
+    void heartbeat();
 
     void handleLogin(const Packet& pkt, const sockaddr_in& clientAddress);
 

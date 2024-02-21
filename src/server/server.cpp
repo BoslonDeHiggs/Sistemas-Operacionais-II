@@ -6,11 +6,16 @@
 using namespace std;
 
 Server::Server(uint16_t port){
+	id = time(NULL);
+	leader = false;
+
 	init_database();
 	open_udp_connection(port);
 	create_broadcast_socket();
-	call_listenThread();
 	call_listenBroadcastThread();
+	call_listenThread();
+	call_heartbeatThread();
+	call_processBroadcastThread();
 	call_processThread();
 }
 
@@ -145,119 +150,15 @@ void Server::listen_broadcast() {
 
 			Packet pkt = Packet::deserialize(buffer);
 
-			string payload = "Hello World!";
+			pkt_addr packet_address(pkt, clientAddress);
 
-			Packet packet(DISCOV_MSG, 0, payload.length(), time(NULL), "SERVER", payload);
-			string aux = packet.serialize();
-			const char* message = aux.c_str();
-
-			ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
-			if (bytesSent == -1) {
-				print_error_msg("Error sending data to client");
-			}
-
-            std::cout << pkt.name << " message" << endl;
+			unique_lock<mutex> lock(mtx_broadcast);
+				pkts_queue_broadcast.push(packet_address);
+			cv_broadcast.notify_one();
         }
     }
 }
 
-void Server::send_pkt(sockaddr_in clientAddress, time_t timestamp, string clientName, string payload){
-    Packet packet(0, 0, payload.length(), timestamp, clientName, payload);
-
-    string aux = packet.serialize();
-
-    const char* message = aux.c_str();
-    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
-    if (bytesSent == -1) {
-        print_error_msg("Error sending data to client");
-    }
-}
-void Server::handleLogin(const Packet& pkt, const sockaddr_in& clientAddress) {
-    print_server_ntf(pkt.timestamp, "Request for login from", pkt.name);
-    
-    bool in_database = database.contains(pkt.name);
-
-    if (!in_database) {
-        handleNewAccount(pkt, clientAddress);
-    } else {
-        handleExistingAccount(pkt, clientAddress);
-    }
-}
-
-void Server::handleNewAccount(const Packet& pkt, const sockaddr_in& clientAddress) {
-    print_server_ntf(time(NULL), "User doesn't have an account", "");
-    print_server_ntf(time(NULL), "Creating account for", pkt.name);
-    database.sign_up(pkt.name, clientAddress);
-    send_pkt(clientAddress, time(NULL), "SERVER", "Account created successfully");
-    database.write();
-}
-
-void Server::handleExistingAccount(const Packet& pkt, const sockaddr_in& clientAddress) {
-    auto it = database.addressMap.find(pkt.name);
-    if (it == database.addressMap.end() || it->second.size() < 2) {
-        print_server_ntf(time(NULL), "Login from", pkt.name);
-        database.login(pkt.name, clientAddress);
-        send_pkt(clientAddress, time(NULL), "SERVER", "Login successful");
-        print_server_ntf(time(NULL), "Verifying pending messages for", pkt.name);
-        sendPendingMessages(pkt.name, clientAddress);
-    } else {
-        print_server_ntf(time(NULL), "There are two other sessions already active from", pkt.name);
-        send_pkt(clientAddress, time(NULL), "SERVER", "There are two other sessions already active");
-    }
-}
-
-void Server::handleSend(const Packet& pkt, const sockaddr_in& clientAddress) {
-	print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
-	vector<string> followers = database.get_followers(pkt.name);
-	for(const string& follower : followers){
-		if(database.is_logged_in(follower)){
-			map<string, vector<sockaddr_in>>::iterator it;
-			it = database.addressMap.find(follower);
-			for(sockaddr_in address : it->second)
-				send_pkt(address, pkt.timestamp, pkt.name, pkt._payload);
-		}
-		else{
-			print_server_ntf(time(NULL), "Storing messages in message queue for", follower);
-			database.storeMessageForOfflineUser(follower, pkt);
-			if (!database.messageQueue[follower].empty()){
-				print_server_ntf(time(NULL), "Message stored successfully", "");
-			}
-		}
-	}
-}
-
-void Server::handleFollow(const Packet& pkt, const sockaddr_in& clientAddress) {
-    bool in_database = database.contains(pkt._payload);
-    
-    if (in_database) {
-        if (pkt._payload != pkt.name) {
-            bool successful = database.add_follower(pkt._payload, pkt.name);
-            if (successful) {
-                database.write();
-                print_server_follow_ntf(time(NULL), "started following", pkt.name, pkt._payload);
-                send_pkt(clientAddress, time(NULL), "SERVER", "You started following " + pkt._payload);
-            } else {
-                send_pkt(clientAddress, time(NULL), "SERVER", "You already follow " + pkt._payload);
-            }
-        } else {
-            send_pkt(clientAddress, time(NULL), "SERVER", "Can't follow self");
-        }
-    } else {
-        print_server_ntf(time(NULL), "Something went wrong", "");
-        send_pkt(clientAddress, time(NULL), "SERVER", "Something went wrong");
-    }
-}
-
-void Server::handleExit(const Packet& pkt, const sockaddr_in& clientAddress) {
-    bool in_database = database.contains(pkt.name);
-    
-    if (in_database) {
-        database.exit(pkt.name, clientAddress);
-        print_server_ntf(time(NULL), "Log out from", pkt.name);
-    } else {
-        print_server_ntf(time(NULL), "Something went wrong while logging out", "");
-    }
-}
 void Server::process(){
 	while(true){
 		unique_lock<mutex> lock(mtx);
@@ -288,6 +189,145 @@ void Server::process(){
 	}
 }
 
+void Server::process_broadcast(){
+	while(true){
+		unique_lock<mutex> lock(mtx_broadcast);
+		cv_broadcast.wait(lock, [this]() { return !pkts_queue_broadcast.empty(); });
+		pkt_addr packet_address = pkts_queue_broadcast.front();
+		pkts_queue_broadcast.pop();
+
+		Packet pkt = packet_address.pkt;
+		sockaddr_in clientAddress = packet_address.addr;
+
+		if(pkt.type == DISCOV_MSG){
+			string payload = "You are connected to the main server";
+			send_pkt(DISCOV_MSG, clientAddress, time(NULL), "SERVER", payload);
+		}
+		if(pkt.type == HEARTBEAT){
+			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+		}
+	}
+}
+
+void Server::heartbeat(){
+	string payload = "Heartbeat";
+	while(true){
+		sleep(3);
+		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER " + to_string(id), payload);
+	}
+}
+
+void Server::send_pkt(uint16_t type, sockaddr_in clientAddress, time_t timestamp, string name, string payload){
+    Packet packet(type, 0, payload.length(), timestamp, name, payload);
+
+    string aux = packet.serialize();
+
+    const char* message = aux.c_str();
+    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&clientAddress, sizeof(clientAddress));
+    if (bytesSent == -1) {
+        print_error_msg("Error sending data to client");
+    }
+}
+
+void Server::send_broadcast_pkt(uint16_t type, time_t timestamp, string name, string payload){
+    Packet packet(type, 0, payload.length(), timestamp, name, payload);
+
+    string aux = packet.serialize();
+
+    const char* message = aux.c_str();
+    ssize_t bytesSent = sendto(broadcastSocket, message, strlen(message), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+    if (bytesSent == -1) {
+        print_error_msg("Error sending data to client");
+    }
+}
+
+void Server::handleLogin(const Packet& pkt, const sockaddr_in& clientAddress) {
+    print_server_ntf(pkt.timestamp, "Request for login from", pkt.name);
+    
+    bool in_database = database.contains(pkt.name);
+
+    if (!in_database) {
+        handleNewAccount(pkt, clientAddress);
+    } else {
+        handleExistingAccount(pkt, clientAddress);
+    }
+}
+
+void Server::handleNewAccount(const Packet& pkt, const sockaddr_in& clientAddress) {
+    print_server_ntf(time(NULL), "User doesn't have an account", "");
+    print_server_ntf(time(NULL), "Creating account for", pkt.name);
+    database.sign_up(pkt.name, clientAddress);
+    send_pkt(0, clientAddress, time(NULL), "SERVER", "Account created successfully");
+    database.write();
+}
+
+void Server::handleExistingAccount(const Packet& pkt, const sockaddr_in& clientAddress) {
+    auto it = database.addressMap.find(pkt.name);
+    if (it == database.addressMap.end() || it->second.size() < 2) {
+        print_server_ntf(time(NULL), "Login from", pkt.name);
+        database.login(pkt.name, clientAddress);
+        send_pkt(0, clientAddress, time(NULL), "SERVER", "Login successful");
+        print_server_ntf(time(NULL), "Verifying pending messages for", pkt.name);
+        sendPendingMessages(pkt.name, clientAddress);
+    } else {
+        print_server_ntf(time(NULL), "There are two other sessions already active from", pkt.name);
+        send_pkt(0, clientAddress, time(NULL), "SERVER", "There are two other sessions already active");
+    }
+}
+
+void Server::handleSend(const Packet& pkt, const sockaddr_in& clientAddress) {
+	print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+	vector<string> followers = database.get_followers(pkt.name);
+	for(const string& follower : followers){
+		if(database.is_logged_in(follower)){
+			map<string, vector<sockaddr_in>>::iterator it;
+			it = database.addressMap.find(follower);
+			for(sockaddr_in address : it->second)
+				send_pkt(0, address, pkt.timestamp, pkt.name, pkt._payload);
+		}
+		else{
+			print_server_ntf(time(NULL), "Storing messages in message queue for", follower);
+			database.storeMessageForOfflineUser(follower, pkt);
+			if (!database.messageQueue[follower].empty()){
+				print_server_ntf(time(NULL), "Message stored successfully", "");
+			}
+		}
+	}
+}
+
+void Server::handleFollow(const Packet& pkt, const sockaddr_in& clientAddress) {
+    bool in_database = database.contains(pkt._payload);
+    
+    if (in_database) {
+        if (pkt._payload != pkt.name) {
+            bool successful = database.add_follower(pkt._payload, pkt.name);
+            if (successful) {
+                database.write();
+                print_server_follow_ntf(time(NULL), "started following", pkt.name, pkt._payload);
+                send_pkt(0, clientAddress, time(NULL), "SERVER", "You started following " + pkt._payload);
+            } else {
+                send_pkt(0, clientAddress, time(NULL), "SERVER", "You already follow " + pkt._payload);
+            }
+        } else {
+            send_pkt(0, clientAddress, time(NULL), "SERVER", "Can't follow self");
+        }
+    } else {
+        print_server_ntf(time(NULL), "Something went wrong", "");
+        send_pkt(0, clientAddress, time(NULL), "SERVER", "Something went wrong");
+    }
+}
+
+void Server::handleExit(const Packet& pkt, const sockaddr_in& clientAddress) {
+    bool in_database = database.contains(pkt.name);
+    
+    if (in_database) {
+        database.exit(pkt.name, clientAddress);
+        print_server_ntf(time(NULL), "Log out from", pkt.name);
+    } else {
+        print_server_ntf(time(NULL), "Something went wrong while logging out", "");
+    }
+}
+
 void Server::call_listenThread(){
 	thread listenThread(&Server::listen, this);
 	listenThread.detach();
@@ -303,11 +343,21 @@ void Server::call_processThread(){
 	processThread.join();
 }
 
+void Server::call_processBroadcastThread(){
+	thread processBroadcastThread(&Server::process_broadcast, this);
+	processBroadcastThread.detach();
+}
+
+void Server::call_heartbeatThread(){
+	thread heartbeatThread(&Server::heartbeat, this);
+	heartbeatThread.detach();
+}
+
 void Server::sendPendingMessages(const string& username, const sockaddr_in& clientAddress) {
     auto& queue = database.messageQueue[username];
     while (!queue.empty()) {
         Packet messagePkt = queue.front();
-        send_pkt(clientAddress, messagePkt.timestamp, messagePkt.name, messagePkt._payload);
+        send_pkt(0, clientAddress, messagePkt.timestamp, messagePkt.name, messagePkt._payload);
         queue.pop();
     }
 }
