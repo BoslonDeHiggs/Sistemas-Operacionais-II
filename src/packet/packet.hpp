@@ -20,6 +20,7 @@
 #define NEW_SERVER 1300
 #define NEW_LEADER 1400
 #define DATABASE 1500
+#define LEADER_CHECK 1600
 
 using namespace std;
 

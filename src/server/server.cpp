@@ -217,11 +217,22 @@ void Server::process_broadcast(){
 			address.sin_port = PORT;
 
             infile.close();
-			cout << "Banco de dados: " << database_content << endl;
-			send_pkt(DATABASE, address, time(NULL), "SERVER", database_content);
+			string payload = "Ja existe um lider";
+			cout << database_content << endl;
+			send_broadcast_pkt(LEADER_CHECK, time(NULL), "SERVER", database_content);
 		}
 		if(pkt.type == DATABASE){
+			cout << "Cade o Banco de dados?" << endl;
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+		}
+		if(pkt.type == LEADER_CHECK){
+			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+			if (pkt.timestamp == id){
+				cout << "Eu sou o lider" << endl;
+			}
+			else{
+				cout << "Nao sou o lider" << endl;
+			}
 		}
 	}
 }
@@ -230,7 +241,7 @@ void Server::heartbeat(){
 	string payload = "Heartbeat";
 	while(true){
 		sleep(3);
-		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER" + to_string(id), payload);
+		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER " + to_string(id), payload);
 	}
 }
 
