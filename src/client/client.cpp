@@ -63,12 +63,6 @@ int Client::create_udp_socket(){
 }
 
 int Client::enable_broadcast() {
-    udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udpSocket == -1) {
-        print_error_msg("Error creating broadcast socket");
-        return -100;
-    }
-
     // Enable broadcast option
     int broadcastEnable = 1;
     if (setsockopt(udpSocket, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
@@ -81,19 +75,6 @@ int Client::enable_broadcast() {
     broadcastAddr.sin_family = AF_INET;
     broadcastAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST); // Broadcasting to all interfaces
     broadcastAddr.sin_port = htons(BROADCAST_PORT);
-
-    return 0;
-}
-
-int Client::connect_to_udp_server(const char *ip, uint16_t port){
-
-    // Set up the server address struct
-    struct hostent *server = gethostbyname(ip);
-    std::memset(&serverAddress, 0, sizeof(serverAddress));
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr = *((struct in_addr *)server->h_addr); // Server IP address (loopback in this example)
-    serverAddress.sin_port = htons(port);
-    bzero(&(serverAddress.sin_zero), 8);
 
     return 0;
 }

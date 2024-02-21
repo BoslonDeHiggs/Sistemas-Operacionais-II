@@ -17,8 +17,6 @@ using namespace std;
 class Client{
 public:
     Client(string name);
-    
-    int connect_to_udp_server(const char *ip, uint16_t port);
 
     void login();
 
