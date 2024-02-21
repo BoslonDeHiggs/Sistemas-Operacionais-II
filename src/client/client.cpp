@@ -8,16 +8,14 @@ using namespace std;
 
 Client* globalClientPointer = nullptr;
 
-Client::Client(string name, const char *ip, uint16_t port){
+Client::Client(string name){
     this->name = "@" + name;
     globalClientPointer = this;
     std::signal(SIGINT, Client::signalHandler);
     create_udp_socket();
-    create_broadcast_socket();
 
-    send_broadcast_pkt(DISCOV_MSG, get_own_address(udpSocket));
-    connect_to_udp_server(ip, port);
     call_listenThread();
+    send_broadcast_pkt(DISCOV_MSG, get_own_address(udpSocket));
     call_sendThread();
 }
 
@@ -59,21 +57,23 @@ int Client::create_udp_socket(){
         return -100;
     }
 
+    enable_broadcast();
+
     return 0;
 }
 
-int Client::create_broadcast_socket() {
-    broadcastSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (broadcastSocket == -1) {
+int Client::enable_broadcast() {
+    udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udpSocket == -1) {
         print_error_msg("Error creating broadcast socket");
         return -100;
     }
 
     // Enable broadcast option
     int broadcastEnable = 1;
-    if (setsockopt(broadcastSocket, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
+    if (setsockopt(udpSocket, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
         print_error_msg("Error setting broadcast option");
-        close(broadcastSocket);
+        close(udpSocket);
         return -200;
     }
 
@@ -95,11 +95,6 @@ int Client::connect_to_udp_server(const char *ip, uint16_t port){
     serverAddress.sin_port = htons(port);
     bzero(&(serverAddress.sin_zero), 8);
 
-    if (connect(udpSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        print_error_msg("Error connecting to server");
-        return -200;
-    }
-
     return 0;
 }
 
@@ -113,7 +108,7 @@ void Client::send_pkt(uint16_t code, string payload){
     string aux = packet.serialize();
 
     const char* message = aux.c_str();
-    ssize_t bytesSent = send(udpSocket, message, strlen(message), 0);
+    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (bytesSent == -1) {
         print_error_msg("Error sending data to server");
     }
@@ -125,16 +120,13 @@ void Client::send_broadcast_pkt(uint16_t code, string payload){
     string aux = packet.serialize();
 
     const char* message = aux.c_str();
-    ssize_t bytesSent = sendto(broadcastSocket, message, strlen(message), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+    ssize_t bytesSent = sendto(udpSocket, message, strlen(message), 0, (struct sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     if (bytesSent < 0) {
         print_error_msg("Error sending broadcast message");
     }
 }
 
 void Client::get_input(){
-    
-    login();
-
     while (true){
         char input[BUFFER_SIZE];
         
@@ -178,7 +170,8 @@ void Client::listen(){
     while (true){
         // Receive data
         char buffer[1024];
-        ssize_t bytesRead = recv(udpSocket, buffer, sizeof(buffer), 0);
+        socklen_t serverAddressLenght = sizeof(serverAddress);
+		ssize_t bytesRead = recvfrom(udpSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&serverAddress, &serverAddressLenght);
 
         if (bytesRead == -1) {
             print_error_msg("Error receiving data");
@@ -189,36 +182,11 @@ void Client::listen(){
 
             Packet pkt = Packet::deserialize(buffer);
 
+            if(pkt.type == DISCOV_MSG){
+                login();
+            }
+
             print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
-        }
-    }
-}
-
-void Client::listen_broadcast() {
-    while (true) {
-		char buffer[1024];
-		socklen_t broadcastAddrLenght = sizeof(broadcastAddr);
-
-        ssize_t bytesRead = recvfrom(broadcastSocket, buffer, sizeof(buffer), 0, (struct sockaddr*)&broadcastAddr, &broadcastAddrLenght);
-
-        if (bytesRead == -1) {
-            print_error_msg("Error receiving broadcast message");
-        } else {
-            buffer[bytesRead] = '\0'; // Null-terminate the received data
-
-			Packet pkt = Packet::deserialize(buffer);
-
-			char serverIp[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &broadcastAddr.sin_addr, serverIp, INET_ADDRSTRLEN);
-			int serverPort = ntohs(broadcastAddr.sin_port);
-
-			struct sockaddr_in responseAddress;
-			memset(&responseAddress, 0, sizeof(responseAddress));
-			responseAddress.sin_family = AF_INET;
-			responseAddress.sin_port = htons(serverPort);
-			if (inet_pton(AF_INET, serverIp, &responseAddress.sin_addr) <= 0) {
-				perror("inet_pton");
-			}
         }
     }
 }
@@ -236,7 +204,7 @@ void Client::call_listenThread(){
 void Client::sendExit(){
     Packet packet(EXIT, 0, 0, time(NULL), this->name, "Terminating session");
     string message = packet.serialize();
-    ssize_t bytesSent = send(udpSocket, message.c_str(), message.length(), 0);
+    ssize_t bytesSent = sendto(udpSocket, message.c_str(), message.length(), 0, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     if (bytesSent == -1) {
         print_error_msg("Error sending exit message to server");
     }

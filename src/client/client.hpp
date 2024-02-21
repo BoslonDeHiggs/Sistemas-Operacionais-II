@@ -16,7 +16,7 @@ using namespace std;
 
 class Client{
 public:
-    Client(string name, const char *ip, uint16_t port);
+    Client(string name);
     
     int connect_to_udp_server(const char *ip, uint16_t port);
 
@@ -35,12 +35,12 @@ public:
 private:
     string name;
 
-    int udpSocket, broadcastSocket;
+    int udpSocket;
     sockaddr_in serverAddress, broadcastAddr;
 
     int create_udp_socket();
 
-    int create_broadcast_socket();
+    int enable_broadcast();
 
     string get_own_address(int sockfd);
 

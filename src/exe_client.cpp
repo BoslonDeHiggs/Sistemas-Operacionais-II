@@ -2,8 +2,8 @@
 
 int main(int argc, char* argv[]){
 
-    if(argc != 4){
-        print_error_msg("./client @<name> <server IP> <server PORT>");
+    if(argc != 2){
+        print_error_msg("./client <name>");
         return 0;
     }
 
@@ -18,10 +18,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    const char* ip = argv[2];
-    uint16_t port = atoi(argv[3]);
-
-    Client client(name, ip, port);
+    Client client(name);
 
     return 0;
 }
