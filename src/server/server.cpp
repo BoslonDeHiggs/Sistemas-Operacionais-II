@@ -217,6 +217,7 @@ void Server::process_broadcast(){
 			address.sin_port = PORT;
 
             infile.close();
+			cout << "Banco de dados: " << database_content << endl;
 			send_pkt(DATABASE, address, time(NULL), "SERVER", database_content);
 		}
 		if(pkt.type == DATABASE){
