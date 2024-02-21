@@ -15,9 +15,11 @@
 #define ELECTION_START 500
 #define ELECTION_ANSWER 600
 #define ELECTION_COORDINATOR 700
-#define LINK_REPLICA 900 // will link the new replica to the primary replica (just add to primary map of replicas)
 #define UPDATE_REPLICA 1000 // the replica which receives this will be updated with some data in the payload
 #define HEARTBEAT 1200
+#define NEW_SERVER 1300
+#define NEW_LEADER 1400
+#define DATABASE 1500
 
 using namespace std;
 

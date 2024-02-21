@@ -12,6 +12,7 @@ Server::Server(uint16_t port){
 	init_database();
 	open_udp_connection(port);
 	create_broadcast_socket();
+	send_broadcast_pkt(NEW_SERVER, time(NULL), "SERVER"+to_string(id), to_string(id));
 	call_listenBroadcastThread();
 	call_listenThread();
 	call_heartbeatThread();
@@ -25,8 +26,6 @@ string Server::get_own_address(int sockfd){
 
     // Retrieve the socket address information
     if (getsockname(sockfd, reinterpret_cast<sockaddr*>(&sockname), &socklen) == -1) {
-        // Handle error
-        // For example, throw an exception or return an empty string
         return "";
     }
 
@@ -34,8 +33,6 @@ string Server::get_own_address(int sockfd){
     char buffer[INET_ADDRSTRLEN];
     const char* p = inet_ntop(AF_INET, &sockname.sin_addr, buffer, sizeof(buffer));
     if (p == nullptr) {
-        // Handle error
-        // For example, throw an exception or return an empty string
         return "";
     }
 
@@ -197,13 +194,29 @@ void Server::process_broadcast(){
 		pkts_queue_broadcast.pop();
 
 		Packet pkt = packet_address.pkt;
-		sockaddr_in clientAddress = packet_address.addr;
+		sockaddr_in address = packet_address.addr;
 
 		if(pkt.type == DISCOV_MSG){
-			string payload = "You are connected to the main server";
-			send_pkt(DISCOV_MSG, clientAddress, time(NULL), "SERVER", payload);
+			if(leader){
+				string payload = "You are connected to the main server";
+				send_pkt(DISCOV_MSG, address, time(NULL), "SERVER", payload);
+			}
 		}
 		if(pkt.type == HEARTBEAT){
+			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+		}
+		if(pkt.type == NEW_SERVER){
+			std::ifstream infile("database/database.txt");
+            std::string database_content;
+            std::string line;
+            while (std::getline(infile, line)) {
+                database_content += line + "\n";
+            }
+
+            infile.close();
+			send_pkt(DATABASE, address, time(NULL), "SERVER", database_content);
+		}
+		if(pkt.type == DATABASE){
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 		}
 	}
@@ -213,7 +226,7 @@ void Server::heartbeat(){
 	string payload = "Heartbeat";
 	while(true){
 		sleep(3);
-		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER " + to_string(id), payload);
+		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER" + to_string(id), payload);
 	}
 }
 
