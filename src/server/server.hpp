@@ -52,9 +52,11 @@ public:
 
     int get_socket();
 
+    void checkHeartbeatTimeout();
+
     //ALGORITMO DE ELEICAO
-    //time_t lastHeartbeat = 0;
-    //const int HEARTBEAT_TIMEOUT = 10; // Timeout em segundos
+    time_t lastHeartbeat = 0;
+    const int HEARTBEAT_TIMEOUT = 10; // Timeout em segundos
 
 private:
 	int udpSocket, broadcastSocket;

@@ -15,13 +15,11 @@ Server::Server(uint16_t port){
 	create_broadcast_socket();
 	send_broadcast_pkt(NEW_SERVER, time(NULL), "SERVER"+to_string(id), to_string(id));
 	call_listenBroadcastThread();
-	cout << "Teste lorem ipsum0" << endl;
 	call_listenThread();
-	cout << "Teste lorem ipsum1" << endl;
 	call_heartbeatThread();
-	cout << "Teste lorem ipsum2" << endl;
 	call_processBroadcastThread();
-	cout << "Teste lorem ipsum3" << endl;
+	std::thread heartbeatCheckThread(&Server::checkHeartbeatTimeout, this);
+	heartbeatCheckThread.detach(); // Executa em background
 	call_processThread();
 	
 //ALGORITMO DE ELEICAO
@@ -213,7 +211,7 @@ void Server::process_broadcast(){
 		}
 		if(pkt.type == HEARTBEAT){
 			//ALGORITMO DE ELEICAO
-			//lastHeartbeat = time(NULL);
+			lastHeartbeat = time(NULL);
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 		}
 		if(pkt.type == NEW_SERVER){
@@ -283,7 +281,8 @@ void Server::heartbeat(){
 	string payload = "Heartbeat";
 	while(true){
 		sleep(3);
-		send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER " + to_string(id), payload);
+		if (leader)
+			send_broadcast_pkt(HEARTBEAT, time(NULL), "SERVER " + to_string(id), payload);
 	}
 }
 
@@ -437,14 +436,14 @@ int Server::get_socket(){
 }
 
 //ALGORITMO DE ELEICAO
-//void Server::checkHeartbeatTimeout() {
-//    while(true) {
-//        sleep(1); // Verifica o timeout a cada segundo
-//
-//        if(lastHeartbeat > 0 && (time(NULL) - lastHeartbeat) > HEARTBEAT_TIMEOUT) { //Se a diferença de tempo entre a ultima heartbeat e o tempo
-//            std::cout << "Servidor primário inativo. Iniciando eleição de novo líder..." << std::endl; //atual for maior que o limite, inicia eleicao
-//            // Implemente a lógica de eleição de novo líder ou outra ação aqui
-//            lastHeartbeat = 0; // Reset para evitar múltiplas detecções
-//        }
-//    }
-//}
+void Server::checkHeartbeatTimeout() {
+    while(true) {
+        sleep(1); // Verifica o timeout a cada segundo
+
+        if(lastHeartbeat > 0 && (time(NULL) - lastHeartbeat) > HEARTBEAT_TIMEOUT) { //Se a diferença de tempo entre a ultima heartbeat e o tempo
+            std::cout << "Servidor primário inativo. Iniciando eleição de novo líder..." << std::endl; //atual for maior que o limite, inicia eleicao
+            // Implemente a lógica de eleição de novo líder ou outra ação aqui
+            lastHeartbeat = 0; // Reset para evitar múltiplas detecções
+        }
+    }
+}
