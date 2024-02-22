@@ -234,7 +234,7 @@ void Server::process_broadcast(){
 			}
 			else{
 				if (leader)
-					send_broadcast_pkt(DATABASE, id, "SERVER", pkt._payload);
+					send_broadcast_pkt(DATABASE, id, "SERVER", database_content);
 			}
 			//send_broadcast_pkt(LEADER_CHECK, id, "SERVER", database_content);
 		}
