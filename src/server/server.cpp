@@ -228,7 +228,7 @@ void Server::process_broadcast(){
 
             infile.close();
 			cout << database_content << endl;
-			send_broadcast_pkt(LEADER_CHECK, time(NULL), "SERVER", database_content);
+			send_broadcast_pkt(LEADER_CHECK, id, "SERVER", database_content);
 		}
 		if(pkt.type == DATABASE){
 			//cout << "Cade o Banco de dados?" << endl;
@@ -252,13 +252,12 @@ void Server::process_broadcast(){
 		if(pkt.type == LEADER_CHECK){
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 
-			if (pkt.timestamp < id){ //Se um servidor de timestamp menor que o meu me responder, atualizo meu banco de dados para o dele e fico em stand-by
-				cout << "Eu nao sou o lider" << endl;
-				//send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
+			if (pkt.timestamp == id){ 
+				cout << "Recebi minha propria mensagem." << endl;
 			}
 			else{
-				cout << "Eu sou o lider" << endl;
-				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload); // Essa linha nao esta correta aqui, apenas para fins de teste e debug
+				cout << "Enviando Banco de Dados." << endl;
+				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
 			}
 		}
 	}
