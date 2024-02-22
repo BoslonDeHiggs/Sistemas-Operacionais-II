@@ -229,7 +229,7 @@ void Server::process_broadcast(){
 			address.sin_port = PORT;
 
             infile.close();
-			cout << database_content << endl;
+			//cout << database_content << endl;
 
 			if (pkt.timestamp == id){
 
@@ -242,7 +242,7 @@ void Server::process_broadcast(){
 		}
 		if(pkt.type == DATABASE){
 			//cout << "Cade o Banco de dados?" << endl;
-			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+			//print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 			//cout << "Aqui em cima" << endl;
 			string received_content = pkt._payload;
     		size_t pos = 0;
