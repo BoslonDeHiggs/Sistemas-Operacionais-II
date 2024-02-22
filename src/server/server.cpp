@@ -8,7 +8,7 @@ using namespace std;
 
 Server::Server(uint16_t port){
 	id = time(NULL);
-	leader = false;
+	leader = true;
 
 	init_database();
 	open_udp_connection(PORT);
@@ -233,7 +233,8 @@ void Server::process_broadcast(){
 
 			}
 			else{
-				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
+				if (leader)
+					send_broadcast_pkt(DATABASE, id, "SERVER", pkt._payload);
 			}
 			//send_broadcast_pkt(LEADER_CHECK, id, "SERVER", database_content);
 		}
@@ -254,6 +255,9 @@ void Server::process_broadcast(){
 				outfile.close(); // Fecha o arquivo
 			} else {
 				std::cerr << "Não foi possível abrir o arquivo para escrita." << std::endl;
+			}
+			if (pkt.timestamp != id){
+				leader = false;
 			}
 		}
 		if(pkt.type == LEADER_CHECK){
