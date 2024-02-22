@@ -268,6 +268,7 @@ void Server::process_broadcast(){
 
 			if (stoi(pkt._payload) >= id)
 				leader = true;
+				//send_pkt(NEW_LEADER, address, time(NULL), "SERVER", payload);
 		}
 	}
 }
