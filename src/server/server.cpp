@@ -18,6 +18,7 @@ Server::Server(uint16_t port){
 	call_listenThread();
 	call_heartbeatThread();
 	call_processBroadcastThread();
+	cout << "Teste lorem ipsum1" << endl;
 	call_processThread();
 	
 //ALGORITMO DE ELEICAO
@@ -257,6 +258,7 @@ void Server::process_broadcast(){
 				std::cerr << "Não foi possível abrir o arquivo para escrita." << std::endl;
 			}
 			if (pkt.timestamp != id){
+				cout << "lider falso" << endl;
 				leader = false;
 			}
 		}
