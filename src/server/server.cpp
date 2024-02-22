@@ -15,10 +15,13 @@ Server::Server(uint16_t port){
 	create_broadcast_socket();
 	send_broadcast_pkt(NEW_SERVER, time(NULL), "SERVER"+to_string(id), to_string(id));
 	call_listenBroadcastThread();
+	cout << "Teste lorem ipsum0" << endl;
 	call_listenThread();
-	call_heartbeatThread();
-	call_processBroadcastThread();
 	cout << "Teste lorem ipsum1" << endl;
+	call_heartbeatThread();
+	cout << "Teste lorem ipsum2" << endl;
+	call_processBroadcastThread();
+	cout << "Teste lorem ipsum3" << endl;
 	call_processThread();
 	
 //ALGORITMO DE ELEICAO
