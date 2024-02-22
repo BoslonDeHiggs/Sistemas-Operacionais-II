@@ -251,7 +251,7 @@ void Server::process_broadcast(){
         		received_content.replace(pos, token.length(), "\n");
         		pos += 1; // Movendo alem do '\n' substituido para evitar loop infinito
     		}
-			std::ofstream outfile("new_database.txt"); // Abre o arquivo "new_database.txt" para escrita
+			std::ofstream outfile("database/database.txt"); // Abre o arquivo "new_database.txt" para escrita
 			if (outfile.is_open()) {
 				outfile << received_content; // Escreve o conteúdo no arquivo
 				outfile.close(); // Fecha o arquivo
