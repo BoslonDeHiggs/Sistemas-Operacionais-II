@@ -263,16 +263,11 @@ void Server::process_broadcast(){
 				leader = false;
 			}
 		}
-		if(pkt.type == LEADER_CHECK){
+		if(pkt.type == ELECTION_START){
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
 
-			if (pkt.timestamp == id){ 
-				cout << "Recebi minha propria mensagem." << endl;
-			}
-			else{
-				cout << "Enviando Banco de Dados." << endl;
-				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
-			}
+			if (stoi(pkt._payload) >= id)
+				leader = true;
 		}
 	}
 }
@@ -442,7 +437,7 @@ void Server::checkHeartbeatTimeout() {
 
         if(lastHeartbeat > 0 && (time(NULL) - lastHeartbeat) > HEARTBEAT_TIMEOUT) { //Se a diferença de tempo entre a ultima heartbeat e o tempo
             std::cout << "Servidor primário inativo. Iniciando eleição de novo líder..." << std::endl; //atual for maior que o limite, inicia eleicao
-            // Implemente a lógica de eleição de novo líder ou outra ação aqui
+            send_broadcast_pkt(ELECTION_START, id, "SERVER", to_string(id));
             lastHeartbeat = 0; // Reset para evitar múltiplas detecções
         }
     }
