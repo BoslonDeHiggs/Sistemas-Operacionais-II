@@ -52,6 +52,10 @@ public:
 
     int get_socket();
 
+    //ALGORITMO DE ELEICAO
+    //time_t lastHeartbeat = 0;
+    //const int HEARTBEAT_TIMEOUT = 10; // Timeout em segundos
+
 private:
 	int udpSocket, broadcastSocket;
     sockaddr_in serverAddress, broadcastAddr;

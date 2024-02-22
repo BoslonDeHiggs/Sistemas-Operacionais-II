@@ -1,6 +1,7 @@
 #include "server.hpp"
 #include "../packet/packet.hpp"
 
+#define PORT 4000
 #define BROADCAST_PORT 16384
 
 using namespace std;
@@ -10,13 +11,18 @@ Server::Server(uint16_t port){
 	leader = false;
 
 	init_database();
-	open_udp_connection(port);
+	open_udp_connection(PORT);
 	create_broadcast_socket();
+	send_broadcast_pkt(NEW_SERVER, time(NULL), "SERVER"+to_string(id), to_string(id));
 	call_listenBroadcastThread();
 	call_listenThread();
 	call_heartbeatThread();
 	call_processBroadcastThread();
 	call_processThread();
+	
+//ALGORITMO DE ELEICAO
+//	std::thread heartbeatCheckThread(&Server::checkHeartbeatTimeout, this);
+//	heartbeatCheckThread.detach(); // Executa em background
 }
 
 string Server::get_own_address(int sockfd){
@@ -25,8 +31,6 @@ string Server::get_own_address(int sockfd){
 
     // Retrieve the socket address information
     if (getsockname(sockfd, reinterpret_cast<sockaddr*>(&sockname), &socklen) == -1) {
-        // Handle error
-        // For example, throw an exception or return an empty string
         return "";
     }
 
@@ -34,8 +38,6 @@ string Server::get_own_address(int sockfd){
     char buffer[INET_ADDRSTRLEN];
     const char* p = inet_ntop(AF_INET, &sockname.sin_addr, buffer, sizeof(buffer));
     if (p == nullptr) {
-        // Handle error
-        // For example, throw an exception or return an empty string
         return "";
     }
 
@@ -197,14 +199,67 @@ void Server::process_broadcast(){
 		pkts_queue_broadcast.pop();
 
 		Packet pkt = packet_address.pkt;
-		sockaddr_in clientAddress = packet_address.addr;
+		sockaddr_in address = packet_address.addr;
 
 		if(pkt.type == DISCOV_MSG){
-			string payload = "You are connected to the main server";
-			send_pkt(DISCOV_MSG, clientAddress, time(NULL), "SERVER", payload);
+			if(leader){
+				string payload = "You are connected to the main server";
+				send_pkt(DISCOV_MSG, address, time(NULL), "SERVER", payload);
+			}
 		}
 		if(pkt.type == HEARTBEAT){
+			//ALGORITMO DE ELEICAO
+			//lastHeartbeat = time(NULL);
 			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+		}
+		if(pkt.type == NEW_SERVER){
+			std::ifstream infile("database/database.txt");
+            std::string database_content;
+            std::string line;
+			string token = "<<newline>>";
+            while (std::getline(infile, line)) {
+                database_content += line + token;
+            }
+			if (!database_content.empty()) {
+        		database_content.erase(database_content.length() - token.length(), token.length());
+    		}
+
+			address.sin_port = PORT;
+
+            infile.close();
+			cout << database_content << endl;
+			send_broadcast_pkt(LEADER_CHECK, time(NULL), "SERVER", database_content);
+		}
+		if(pkt.type == DATABASE){
+			//cout << "Cade o Banco de dados?" << endl;
+			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+			//cout << "Aqui em cima" << endl;
+			string received_content = pkt._payload;
+    		size_t pos = 0;
+			string token = "<<newline>>";
+    		while ((pos = received_content.find(token, pos)) != string::npos) {
+        		received_content.replace(pos, token.length(), "\n");
+        		pos += 1; // Movendo alem do '\n' substituido para evitar loop infinito
+    		}
+			std::ofstream outfile("new_database.txt"); // Abre o arquivo "new_database.txt" para escrita
+			if (outfile.is_open()) {
+				outfile << received_content; // Escreve o conteúdo no arquivo
+				outfile.close(); // Fecha o arquivo
+			} else {
+				std::cerr << "Não foi possível abrir o arquivo para escrita." << std::endl;
+			}
+		}
+		if(pkt.type == LEADER_CHECK){
+			print_rcv_msg(pkt.timestamp, pkt.name, pkt._payload);
+
+			if (pkt.timestamp < id){ //Se um servidor de timestamp menor que o meu me responder, atualizo meu banco de dados para o dele e fico em stand-by
+				cout << "Eu nao sou o lider" << endl;
+				//send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
+			}
+			else{
+				cout << "Eu sou o lider" << endl;
+				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload); // Essa linha nao esta correta aqui, apenas para fins de teste e debug
+			}
 		}
 	}
 }
@@ -365,3 +420,16 @@ void Server::sendPendingMessages(const string& username, const sockaddr_in& clie
 int Server::get_socket(){
 	return this->udpSocket;
 }
+
+//ALGORITMO DE ELEICAO
+//void Server::checkHeartbeatTimeout() {
+//    while(true) {
+//        sleep(1); // Verifica o timeout a cada segundo
+//
+//        if(lastHeartbeat > 0 && (time(NULL) - lastHeartbeat) > HEARTBEAT_TIMEOUT) { //Se a diferença de tempo entre a ultima heartbeat e o tempo
+//            std::cout << "Servidor primário inativo. Iniciando eleição de novo líder..." << std::endl; //atual for maior que o limite, inicia eleicao
+//            // Implemente a lógica de eleição de novo líder ou outra ação aqui
+//            lastHeartbeat = 0; // Reset para evitar múltiplas detecções
+//        }
+//    }
+//}
