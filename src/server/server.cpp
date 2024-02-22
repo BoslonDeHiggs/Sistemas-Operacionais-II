@@ -228,7 +228,14 @@ void Server::process_broadcast(){
 
             infile.close();
 			cout << database_content << endl;
-			send_broadcast_pkt(LEADER_CHECK, id, "SERVER", database_content);
+
+			if (pkt.timestamp == id){
+
+			}
+			else{
+				send_broadcast_pkt(DATABASE, time(NULL), "SERVER", pkt._payload);
+			}
+			//send_broadcast_pkt(LEADER_CHECK, id, "SERVER", database_content);
 		}
 		if(pkt.type == DATABASE){
 			//cout << "Cade o Banco de dados?" << endl;
